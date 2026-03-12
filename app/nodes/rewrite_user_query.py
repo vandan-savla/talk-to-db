@@ -1,10 +1,10 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from langgraph.graph import MessagesState
 
-from app.main_agent import AgentState
 
-def write_sql_query(state: AgentState) -> AgentState:
+def rewrite_user_query(state: MessagesState) -> MessagesState:
     prompt = ChatPromptTemplate.from_template(
         """ 
         You are a helpful assistant that writes SQL queries to answer the user's question.
@@ -15,7 +15,7 @@ def write_sql_query(state: AgentState) -> AgentState:
         Return the normalized user query. So it can be used in retrieval process to find relavant tables.
         """
     )
-    model = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0)
+    model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
     chain = prompt | model | StrOutputParser()
     result = chain.invoke(state["query"])
     return {"normalized_query": result}
