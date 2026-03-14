@@ -10,15 +10,33 @@ def build_schema_documents(db_structure) -> list[Document]:
         for table_name, table_data in tables.items():
 
             columns = table_data["columns"]
-            description = table_data["table_description"]
+            description = table_data.get("table_description", "No description")
+            relationships = table_data.get("relationships", [])
 
-            column_text = []
+            # -------------------
+            # COLUMN TEXT
+            # -------------------
+            column_lines = []
 
             for col in columns:
-                column_text.append(
+                column_lines.append(
                     f"{col['name']} ({col['type']}): {col['description']}"
                 )
 
+            # -------------------
+            # RELATIONSHIP TEXT
+            # -------------------
+            relationship_lines = []
+
+            for rel in relationships:
+                relationship_lines.append(
+                    f"{table_name}.{rel['column']} -> "
+                    f"{rel['references_table']}.{rel['references_column']}"
+                )
+
+            # -------------------
+            # FINAL EMBEDDING TEXT
+            # -------------------
             schema_text = f"""
                 Table: {table_name}
 
@@ -26,8 +44,11 @@ def build_schema_documents(db_structure) -> list[Document]:
                 {description}
 
                 Columns:
-                {" ".join(column_text)}
-            """
+                {" ".join(column_lines)}
+
+                Relationships:
+                {" ".join(relationship_lines) if relationship_lines else "None"}
+                """.strip()
 
             doc = Document(
                 page_content=schema_text,
@@ -35,7 +56,8 @@ def build_schema_documents(db_structure) -> list[Document]:
                     "schema": schema,
                     "table_name": table_name,
                     "table_description": description,
-                    "columns": columns
+                    "columns": columns,
+                    "relationships": relationships
                 }
             )
 

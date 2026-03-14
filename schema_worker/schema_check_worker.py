@@ -27,13 +27,15 @@ def upsert_schema():
        
         vector = embeddings.embed_documents([doc.page_content])[0]
         vector_id  = table_to_uuid(schema, table_name)
+        
+        
         points.append(
             PointStruct(
                 id=vector_id,
                 vector=vector,
                 payload={
-                    "content": doc.page_content,
-                    **doc.metadata
+                    "page_content": doc.page_content,
+                    "metadata": doc.metadata                
                 }
             )
         )
