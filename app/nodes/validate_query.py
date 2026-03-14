@@ -1,29 +1,50 @@
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from typing import TypedDict, List, Any, Dict
-from langchain_core.messages import AIMessage, BaseMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import AIMessage, SystemMessage
+from langgraph.graph import MessagesState
 import os 
+from app.pydantic_models.node_schemas import TableSchemasOutput, WriteSqlOutput, ValidateQueryOutput
 
-def validate_query(state: BaseMessage) -> BaseMessage:
+def validate_query(state: MessagesState) -> MessagesState:
+    schemas_text = ""
+    candidate_sql = ""
+    
+    for msg in reversed(state["messages"]):
+        if msg.name == "get_tables_schemas" and not schemas_text:
+            try:
+                data = TableSchemasOutput.model_validate_json(msg.content)
+                schemas_text = data.schemas_text
+            except:
+                pass
+        elif msg.name == "write_sql_query" and not candidate_sql:
+            try:
+                data = WriteSqlOutput.model_validate_json(msg.content)
+                candidate_sql = data.candidate_sql
+            except:
+                pass
+                
+        if schemas_text and candidate_sql:
+            break
+
+    query = state["messages"][0].content
+
+    prompt = ChatPromptTemplate.from_messages([
+        SystemMessage(content="You are an expert SQL validator. Validate if the given SQL query correctly answers the user's question based on the provided table schemas. If it is invalid, provide specific feedback on what is wrong and how to fix it."),
+
+        ("human", "User question: {query}\n\nTable schemas:\n{schemas}\n\nCandidate SQL:\n{candidate_sql}")
+    ])
+    
     model = ChatGoogleGenerativeAI(
         model="gemini-2.5-flash",
-        api_key=os.getenv("GOOGLE_API_KEY")
-    )
+        google_api_key=os.getenv("GOOGLE_API_KEY")
+    ).with_structured_output(ValidateQueryOutput)
     
-    prompt = ChatPromptTemplate.from_template(
-        """
-        You are a helpful assistant that validates the SQL query based on the user's question and the relevant table schemas.
-        
-        The user's question is: {query}
-        The SQL query is: {candidate_sql}
-        Validate if the SQL query correctly answers the user's question based on the relevant table schemas.
-        Return "valid" if the SQL query is valid, otherwise return "invalid".
-        """
-    )
     chain = prompt | model
-    response = chain.invoke({"query": state.content, "candidate_sql": state.candidate_sql})
     
-    is_valid = response.content.strip().lower() == "valid"
+    response: ValidateQueryOutput = chain.invoke({
+        "query": query,
+        "schemas": schemas_text,
+        "candidate_sql": candidate_sql
+    })
     
-    return AIMessage(content=str(is_valid))
+    return {"messages": [AIMessage(content=response.model_dump_json(), name="validate_query")]}
