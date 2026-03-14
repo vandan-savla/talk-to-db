@@ -30,8 +30,9 @@ def rewrite_user_query(state: MessagesState) -> MessagesState:
     ])
     
     model = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        google_api_key=os.getenv("GOOGLE_API_KEY")
+        model="gemini-2.5-flash-lite",
+        google_api_key=os.getenv("GOOGLE_API_KEY"),
+        
     ).with_structured_output(RewriteQueryOutput)
 
     chain = prompt | model

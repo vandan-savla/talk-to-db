@@ -1,14 +1,11 @@
-import os
 from dotenv import load_dotenv
-from typing import TypedDict, List, Any, Dict
 from langgraph.graph import END, START, StateGraph, MessagesState
-import json
-
 from app.nodes.rewrite_user_query import rewrite_user_query
 from app.nodes.get_tables_schemas import get_tables_schemas
 from app.nodes.write_sql_query import write_sql_query
 from app.nodes.validate_query import validate_query
 from app.nodes.execute_sql_query import execute_sql_query
+from app.nodes.format_response import format_response
 from app.pydantic_models.node_schemas import ValidateQueryOutput
 
 load_dotenv()
@@ -31,6 +28,7 @@ def build_graph():
     workflow.add_node("write_sql_query", write_sql_query)
     workflow.add_node("validate_query", validate_query)
     workflow.add_node("execute_sql_query", execute_sql_query)
+    workflow.add_node("format_response", format_response)
 
     workflow.add_edge(START, "rewrite_user_query")
     workflow.add_edge("rewrite_user_query", "get_tables_schemas")
@@ -46,7 +44,8 @@ def build_graph():
         },
     )
 
-    workflow.add_edge("execute_sql_query", END)
+    workflow.add_edge("execute_sql_query", "format_response")
+    workflow.add_edge("format_response", END)
     app = workflow.compile()
     
     return app

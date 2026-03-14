@@ -20,4 +20,7 @@ class AnswerOutput(BaseModel):
 
 class ExecuteSqlOutput(BaseModel):
     sql_result: List[Dict[str, Any]] = Field(description="The raw execution result rows from the database.")
-    answer: str = Field(description="The natural language answer based on the SQL result.")
+
+class FormatResponseOutput(BaseModel):
+    answer: str = Field(description="The natural language answer based on the SQL result, formatted in Markdown. If the result includes multiple rows/columns, format it as a markdown table within this answer.")
+    sql_query: str = Field(description="The final executed SQL query.")
