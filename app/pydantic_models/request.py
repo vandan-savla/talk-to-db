@@ -3,3 +3,4 @@ from typing import List, Dict, Any
 
 class QueryRequest(BaseModel):
     question: str
+    chat_id: str

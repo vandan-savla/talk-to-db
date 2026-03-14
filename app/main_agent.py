@@ -1,3 +1,4 @@
+import aiosqlite
 from dotenv import load_dotenv
 from langgraph.graph import END, START, StateGraph, MessagesState
 from app.nodes.rewrite_user_query import rewrite_user_query
@@ -7,8 +8,16 @@ from app.nodes.validate_query import validate_query
 from app.nodes.execute_sql_query import execute_sql_query
 from app.nodes.format_response import format_response
 from app.pydantic_models.node_schemas import ValidateQueryOutput
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+import sqlite3
 
 load_dotenv()
+
+
+conn =  aiosqlite.connect("agent_memory.db", check_same_thread=False)
+
+checkpointer = AsyncSqliteSaver(conn)
+
 
 def route_validation(state: MessagesState):
     last_msg = state["messages"][-1]
@@ -46,7 +55,7 @@ def build_graph():
 
     workflow.add_edge("execute_sql_query", "format_response")
     workflow.add_edge("format_response", END)
-    app = workflow.compile()
+    app = workflow.compile(checkpointer=checkpointer)
     
     return app
 
