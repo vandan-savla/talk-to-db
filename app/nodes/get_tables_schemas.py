@@ -21,7 +21,7 @@ def get_tables_schemas(state: MessagesState) -> MessagesState:
     
     if not normalized_query:
         # Fallback to the original user question
-        normalized_query = state["messages"][0].content
+        normalized_query = state["messages"][-1].content
 
     # Call the tool directly since we don't need the LLM to route it
     docs = get_relevant_tables.invoke({"query": normalized_query})
@@ -33,7 +33,7 @@ def get_tables_schemas(state: MessagesState) -> MessagesState:
     ])
     
     model = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash-lite",
+        model="gemini-2.5-flash",
         google_api_key=os.getenv("GOOGLE_API_KEY")
     ).with_structured_output(TableSchemasOutput)
 

@@ -17,7 +17,7 @@ def write_sql_query(state: MessagesState) -> MessagesState:
                 pass
             break
             
-    query = state["messages"][0].content
+    query = state["messages"][-1].content
     
     feedback_text = ""
     for msg in reversed(state["messages"]):
@@ -39,7 +39,7 @@ def write_sql_query(state: MessagesState) -> MessagesState:
     ])
     
     model = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash-lite",
+        model="gemini-2.5-flash",
         google_api_key=os.getenv("GOOGLE_API_KEY")
     ).with_structured_output(WriteSqlOutput)
     

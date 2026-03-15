@@ -26,7 +26,7 @@ def format_response(state: MessagesState) -> MessagesState:
         if candidate_sql and sql_result:
             break
             
-    query = state["messages"][0].content
+    query = state["messages"][-1].content
 
     prompt = ChatPromptTemplate.from_messages([
         SystemMessage(content="""You are a helpful database assistant. Provide a natural language answer to the user's question based on the results of the SQL query. 
@@ -39,7 +39,7 @@ def format_response(state: MessagesState) -> MessagesState:
     ])
     
     model = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash-lite",
+        model="gemini-2.5-flash",
         google_api_key=os.getenv("GOOGLE_API_KEY")
     ).with_structured_output(FormatResponseOutput) 
     

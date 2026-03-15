@@ -24,3 +24,7 @@ class ExecuteSqlOutput(BaseModel):
 class FormatResponseOutput(BaseModel):
     answer: str = Field(description="The natural language answer based on the SQL result, formatted in Markdown. If the result includes multiple rows/columns, format it as a markdown table within this answer.")
     sql_query: str = Field(description="The final executed SQL query.")
+
+class DeciderOutput(BaseModel):
+    decision: bool = Field(description="True if the user's question requires executing a SQL query, False if it's a general question or out of scope.")
+    response: str = Field(description="A simple answer or a statement denying the scope of the question if the decision is False.")

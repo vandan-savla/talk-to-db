@@ -26,7 +26,7 @@ def validate_query(state: MessagesState) -> MessagesState:
         if schemas_text and candidate_sql:
             break
 
-    query = state["messages"][0].content
+    query = state["messages"][-1].content
 
     prompt = ChatPromptTemplate.from_messages([
         SystemMessage(content="You are an expert SQL validator. Validate if the given SQL query correctly answers the user's question based on the provided table schemas. If it is invalid, provide specific feedback on what is wrong and how to fix it."),
@@ -35,7 +35,7 @@ def validate_query(state: MessagesState) -> MessagesState:
     ])
     
     model = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash-lite",
+        model="gemini-2.5-flash",
         google_api_key=os.getenv("GOOGLE_API_KEY")
     ).with_structured_output(ValidateQueryOutput)
     

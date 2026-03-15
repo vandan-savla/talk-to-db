@@ -7,8 +7,8 @@ import os
 from app.pydantic_models.node_schemas import RewriteQueryOutput , ValidateQueryOutput
 
 def rewrite_user_query(state: MessagesState) -> MessagesState:
-    print(f"Original user query: {state} - {state['messages'][0].content}")
-    query = state["messages"][0].content
+    print(f"Original user query: {state} - {state['messages'][-1].content}")
+    query = state["messages"][-1].content
     feedback_text = ""
     for msg in reversed(state["messages"]):
         if msg.name == "validate_query":
@@ -30,7 +30,7 @@ def rewrite_user_query(state: MessagesState) -> MessagesState:
     ])
     
     model = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash-lite",
+        model="gemini-2.5-flash",
         google_api_key=os.getenv("GOOGLE_API_KEY"),
         
     ).with_structured_output(RewriteQueryOutput)
@@ -38,7 +38,7 @@ def rewrite_user_query(state: MessagesState) -> MessagesState:
     chain = prompt | model
     
     response: RewriteQueryOutput = chain.invoke({"query": query})
-
+    print(f"Rewritten query: {response.normalized_query}")
     return {
         "messages": [AIMessage(content=response.model_dump_json(), name="rewrite_user_query")]
     }

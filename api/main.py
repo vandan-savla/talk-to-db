@@ -12,8 +12,7 @@ app = FastAPI(title="Talk to DB", debug=True)
 @app.post("/query")
 async def query_db(req: QueryRequest):
     try:
-        result = await main_agent.ainvoke({"messages": [HumanMessage(content=req.question)]},
-                                           config={"configurable": {"thread_id": req.chat_id}})
+        result = await main_agent.ainvoke({"messages": [HumanMessage(content=req.question)]}, config={"configurable": {"thread_id": req.chat_id}})
         
         # The final node is format_response, which outputs a JSON string containing answer and sql_query
         last_message = result["messages"][-1]
