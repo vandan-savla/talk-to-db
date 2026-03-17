@@ -1,7 +1,7 @@
 from utils.connect import connect_to_db
 from langchain_core.tools import tool
 
-@tool("execute_sql_query", return_direct=True)
+# @tool("execute_sql_query", return_direct=True)
 def execute_sql_query(sql_query: str, operation: str) -> list[dict]:
     """
     Execute the given SQL query and return the results as a list of dictionaries.

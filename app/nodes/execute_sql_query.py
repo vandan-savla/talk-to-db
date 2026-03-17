@@ -17,7 +17,7 @@ def execute_sql_query(state: MessagesState) -> MessagesState:
     operation = "select" if candidate_sql.strip().lower().startswith("select") else "unknown"
     
     try:
-        sql_result = execute_sql_tool.invoke({"sql_query": candidate_sql, "operation": operation})
+        sql_result = execute_sql_tool(candidate_sql, operation=operation)
     except Exception as e:
         sql_result = [{"error": str(e)}]
         

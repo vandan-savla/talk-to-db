@@ -1,6 +1,7 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import AIMessage, SystemMessage
+from langchain_groq import ChatGroq
 from langgraph.graph import MessagesState
 import os 
 from app.pydantic_models.node_schemas import FormatResponseOutput, ExecuteSqlOutput, WriteSqlOutput
@@ -38,9 +39,14 @@ def format_response(state: MessagesState) -> MessagesState:
         ("human", "User question: {query}\n\nSQL Query Executed:\n{candidate_sql}\n\nSQL Result:\n{sql_result}")
     ])
     
-    model = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        google_api_key=os.getenv("GOOGLE_API_KEY")
+    # model = ChatGoogleGenerativeAI(
+    #     model="gemini-2.5-flash",
+    #     google_api_key=os.getenv("GOOGLE_API_KEY")
+    # ).with_structured_output(FormatResponseOutput) 
+    
+    model = ChatGroq(
+        model="qwen/qwen3-32b",
+        groq_api_key=os.getenv("GROQ_API_KEY")
     ).with_structured_output(FormatResponseOutput) 
     
     chain = prompt | model 
@@ -50,5 +56,5 @@ def format_response(state: MessagesState) -> MessagesState:
         "candidate_sql": candidate_sql,
         "sql_result": str(sql_result)
     })
-    
+    print("Formatted response:", response.model_dump())
     return {"messages": [AIMessage(content=response.model_dump_json(), name="format_response")]}
