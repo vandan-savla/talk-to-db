@@ -8,3 +8,4 @@ fastapi
 uvicorn
 requests
 langgraph-checkpoint-sqlite
+langchain_groq

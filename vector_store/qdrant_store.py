@@ -11,8 +11,10 @@ load_dotenv()
 
 client = QdrantClient(
     url=os.getenv("QDRANT_URL"),
-    api_key=os.getenv("QDRANT_API_KEY")
+    api_key=os.getenv("QDRANT_API_KEY") or None
 )
+
+
 embeddings = FastEmbedEmbeddings(
     model_name="BAAI/bge-small-en-v1.5",
 )
@@ -30,5 +32,7 @@ vector_store = QdrantVectorStore.from_existing_collection(
     embedding=embeddings,
     collection_name=collection_name,
     url=os.getenv("QDRANT_URL"),
-    api_key=os.getenv("QDRANT_API_KEY")
+    api_key=os.getenv("QDRANT_API_KEY") or None
 )
+
+print(vector_store)

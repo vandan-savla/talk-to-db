@@ -49,9 +49,6 @@ def generate_table_artifacts(version=None):
 
         db_structure = {}
 
-        # -------------------------
-        # BUILD TABLE + COLUMN INFO
-        # -------------------------
         for schema, table, col, dtype, col_desc, tab_desc in rows:
 
             if schema not in db_structure:
@@ -71,9 +68,6 @@ def generate_table_artifacts(version=None):
                 "description": col_desc or "No description"
             })
 
-        # -------------------------
-        # BUILD RELATIONSHIPS
-        # -------------------------
         cursor.execute(fk_query)
         fk_rows = cursor.fetchall()
 
@@ -87,9 +81,6 @@ def generate_table_artifacts(version=None):
                     "references_column": ref_column
                 })
 
-        # -------------------------
-        # WRITE ARTIFACT FILES
-        # -------------------------
         for schema, tables in db_structure.items():
             for table_name, data in tables.items():
 

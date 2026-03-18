@@ -27,7 +27,7 @@ def upsert_schema():
        
         vector = embeddings.embed_documents([doc.page_content])[0]
         vector_id  = table_to_uuid(schema, table_name)
-        
+        print(f"Upserting vector for {schema}.{table_name} with id {vector_id}")
         
         points.append(
             PointStruct(
@@ -39,7 +39,7 @@ def upsert_schema():
                 }
             )
         )
-
+    
     vector_store.client.upsert(
         collection_name=vector_store.collection_name,
         points=points
