@@ -1,5 +1,4 @@
 from dotenv import load_dotenv
-from langchain.messages import HumanMessage
 from langgraph.graph import END, START, StateGraph, MessagesState
 from app.nodes.decider_node import decider_node
 from app.nodes.rewrite_user_query import rewrite_user_query
@@ -19,7 +18,12 @@ conn =  sqlite3.connect("agent_memory.db", check_same_thread=False)
 
 checkpointer = SqliteSaver(conn)
 
-def decide_if_call_sql_query(state: MessagesState):
+class AgentState(MessagesState):
+    summary: str
+
+def decide_if_call_sql_query(state: AgentState):
+    if not state.get("messages"):
+        return END
 
     last_msg = state["messages"][-1]
 
@@ -29,7 +33,10 @@ def decide_if_call_sql_query(state: MessagesState):
 
     return "rewrite_user_query"
 
-def route_validation(state: MessagesState):
+def route_validation(state: AgentState):
+    if not state.get("messages"):
+        return "rewrite_user_query"
+
     last_msg = state["messages"][-1]
     if last_msg.name == "validate_query":
         data = ValidateQueryOutput.model_validate_json(last_msg.content)
@@ -40,7 +47,7 @@ def route_validation(state: MessagesState):
     return "rewrite_user_query"
 
 def build_graph():
-    workflow = StateGraph(MessagesState)
+    workflow = StateGraph(AgentState)
 
     # workflow.add_node("decider_node", decider_node)
     workflow.add_node("rewrite_user_query", rewrite_user_query)

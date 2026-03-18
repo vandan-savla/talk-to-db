@@ -5,7 +5,7 @@ from langchain_groq import ChatGroq
 from langgraph.graph import MessagesState
 import os
 from app.pydantic_models.node_schemas import DeciderOutput
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 
 
 def get_last_user_message(messages):
@@ -20,8 +20,7 @@ def decider_node(state: MessagesState) -> MessagesState:
     query = get_last_user_message(state["messages"])
     print("Decider input:", query)
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", """
+    sys_prompt = """
 You are a classifier.
 
 Return:
@@ -29,9 +28,13 @@ Return:
 - decision = false → if greeting / small talk
 
 If false → also generate a direct response.
-"""),
-        ("human", "{query}")
-    ])
+"""
+    summary = state.get("summary", "")
+    if summary:
+        sys_prompt += f"\n\nSummary of previous conversation:\n{summary}"
+
+    sys_msg = SystemMessage(content=sys_prompt)
+    messages = state["messages"]
 
     # model = ChatGoogleGenerativeAI(
     #     model="gemini-2.5-flash-lite",
@@ -41,14 +44,13 @@ If false → also generate a direct response.
     # ).with_structured_output(DeciderOutput)
 
     model = ChatGroq(
-        model="qwen/qwen3-32b",
+        model="openai/gpt-oss-120b",
         groq_api_key=os.getenv("GROQ_API_KEY")
     ).with_structured_output(DeciderOutput) 
     
 
-    response: DeciderOutput = (prompt | model).invoke({"query": query})
+    response: DeciderOutput = model.invoke([sys_msg] + messages)
 
-    # 🔥 KEY PART
     if not response.decision:
         return {
             "messages": [

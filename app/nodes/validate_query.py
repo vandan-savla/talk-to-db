@@ -1,15 +1,16 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import AIMessage, SystemMessage
-from langchain_groq import ChatGroq
 from langgraph.graph import MessagesState
 import os 
 from app.pydantic_models.node_schemas import RewriteQueryOutput, TableSchemasOutput, WriteSqlOutput, ValidateQueryOutput
+from app.helpers.groq_structured import invoke_groq_structured
 
 def validate_query(state: MessagesState) -> MessagesState:
     schemas_text = ""
     candidate_sql = ""
     normalized_query = ""
+    latest_message = state["messages"][-1].content if state.get("messages") else ""
     for msg in reversed(state["messages"]):
         if msg.name == "get_tables_schemas" and not schemas_text:
             try:
@@ -33,7 +34,7 @@ def validate_query(state: MessagesState) -> MessagesState:
                 data = RewriteQueryOutput.model_validate_json(msg.content)
                 normalized_query = data.normalized_query
                 if not normalized_query:
-                    normalized_query = state["messages"][-1].content
+                    normalized_query = latest_message
             except:
                 pass
             break
@@ -52,17 +53,16 @@ def validate_query(state: MessagesState) -> MessagesState:
     # ).with_structured_output(ValidateQueryOutput)
     
     
-    model = ChatGroq(
-        model="qwen/qwen3-32b",
-        groq_api_key=os.getenv("GROQ_API_KEY")
-    ).with_structured_output(ValidateQueryOutput) 
-    
-    chain = prompt | model
-    
-    response: ValidateQueryOutput = chain.invoke({
-        "normalized_query": normalized_query,
-        "schemas": schemas_text,
-        "candidate_sql": candidate_sql
-    })
+    formatted_messages = prompt.format_messages(
+        normalized_query=normalized_query,
+        schemas=schemas_text,
+        candidate_sql=candidate_sql
+    )
+    response: ValidateQueryOutput = invoke_groq_structured(
+        schema_model=ValidateQueryOutput,
+        messages=formatted_messages,
+        model_name="openai/gpt-oss-120b",
+        groq_api_key=os.getenv("GROQ_API_KEY"),
+    )
     
     return {"messages": [AIMessage(content=response.model_dump_json(), name="validate_query")]}

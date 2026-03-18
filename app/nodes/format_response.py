@@ -1,10 +1,10 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import AIMessage, SystemMessage
-from langchain_groq import ChatGroq
 from langgraph.graph import MessagesState
 import os 
 from app.pydantic_models.node_schemas import FormatResponseOutput, ExecuteSqlOutput, WriteSqlOutput
+from app.helpers.groq_structured import invoke_groq_structured
 
 def format_response(state: MessagesState) -> MessagesState:
     candidate_sql = ""
@@ -27,34 +27,36 @@ def format_response(state: MessagesState) -> MessagesState:
         if candidate_sql and sql_result:
             break
             
-    query = state["messages"][-1].content
-
-    prompt = ChatPromptTemplate.from_messages([
-        SystemMessage(content="""You are a helpful database assistant. Provide a natural language answer to the user's question based on the results of the SQL query. 
-        If the SQL result contains multiple rows or columns, format the data as a clean Markdown table in your answer. 
-        Also, return the exact SQL query that was executed in proper SQL format not directly as one liner format it like a SQL query with line breaks and indentation.
-        Explain the results in a concise manner, highlighting any interesting insights or patterns in the data.
-        Clear markdown response as chat message.
-               """),
-        ("human", "User question: {query}\n\nSQL Query Executed:\n{candidate_sql}\n\nSQL Result:\n{sql_result}")
-    ])
+    system_prompt = f"""You are a helpful database assistant. Provide a natural language answer to the user's question based on the results of the SQL query. 
+    If the SQL result contains multiple rows or columns, format the data as a clean Markdown table in your answer. 
+    Also, return the exact SQL query that was executed in proper SQL format not directly as one liner format it like a SQL query with line breaks and indentation.
+    Explain the results in a concise manner, highlighting any interesting insights or patterns in the data.
+    Clear markdown response as chat message.
     
+    SQL Query Executed:
+    {candidate_sql}
+    
+    SQL Result:
+    {sql_result}
+    """
+
+    summary = state.get("summary", "")
+    if summary:
+        system_prompt += f"\n\nSummary of previous conversation:\n{summary}"
+
+    sys_msg = SystemMessage(content=system_prompt)
+    messages = state["messages"]
+
     # model = ChatGoogleGenerativeAI(
     #     model="gemini-2.5-flash",
     #     google_api_key=os.getenv("GOOGLE_API_KEY")
     # ).with_structured_output(FormatResponseOutput) 
     
-    model = ChatGroq(
-        model="qwen/qwen3-32b",
-        groq_api_key=os.getenv("GROQ_API_KEY")
-    ).with_structured_output(FormatResponseOutput) 
-    
-    chain = prompt | model 
-    
-    response: FormatResponseOutput = chain.invoke({
-        "query": query,
-        "candidate_sql": candidate_sql,
-        "sql_result": str(sql_result)
-    })
+    response: FormatResponseOutput = invoke_groq_structured(
+        schema_model=FormatResponseOutput,
+        messages=[sys_msg] + messages,
+        model_name="openai/gpt-oss-120b",
+        groq_api_key=os.getenv("GROQ_API_KEY"),
+    )
     print("Formatted response:", response.model_dump())
     return {"messages": [AIMessage(content=response.model_dump_json(), name="format_response")]}

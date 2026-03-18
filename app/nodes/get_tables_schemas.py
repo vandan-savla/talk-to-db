@@ -2,11 +2,11 @@ from langchain.messages import SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import AIMessage
-from langchain_groq import ChatGroq
 from langgraph.graph import MessagesState
 import os 
 from app.tools.table_schema_retrieval import get_relevant_tables
 from app.pydantic_models.node_schemas import RewriteQueryOutput, TableSchemasOutput
+from app.helpers.groq_structured import invoke_groq_structured
 
 def get_tables_schemas(state: MessagesState) -> MessagesState:
     # Extract the normalized query from the last rewrite_user_query message
@@ -22,7 +22,7 @@ def get_tables_schemas(state: MessagesState) -> MessagesState:
     
     if not normalized_query:
         # Fallback to the original user question
-        normalized_query = state["messages"][-1].content
+        normalized_query = state["messages"][-1].content if state.get("messages") else ""
 
     # Call the tool directly since we don't need the LLM to route it
     docs = get_relevant_tables.invoke({"query": normalized_query})
@@ -39,17 +39,15 @@ def get_tables_schemas(state: MessagesState) -> MessagesState:
     #     google_api_key=os.getenv("GOOGLE_API_KEY")
     # ).with_structured_output(TableSchemasOutput)
 
-    model = ChatGroq(
-        model="qwen/qwen3-32b",
-        groq_api_key=os.getenv("GROQ_API_KEY")
-    ).with_structured_output(TableSchemasOutput) 
-    
-    
-    chain = prompt | model 
-    
-    response: TableSchemasOutput = chain.invoke({
-        "query": normalized_query,
-        "schemas": "\n\n".join(docs) if isinstance(docs, list) else str(docs)
-    })
+    formatted_messages = prompt.format_messages(
+        query=normalized_query,
+        schemas="\n\n".join(docs) if isinstance(docs, list) else str(docs)
+    )
+    response: TableSchemasOutput = invoke_groq_structured(
+        schema_model=TableSchemasOutput,
+        messages=formatted_messages,
+        model_name="openai/gpt-oss-120b",
+        groq_api_key=os.getenv("GROQ_API_KEY"),
+    )
     print("Extracted relevant schemas:", response.model_dump())
     return {"messages": [AIMessage(content=response.model_dump_json(), name="get_tables_schemas")]}
