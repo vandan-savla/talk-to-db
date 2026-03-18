@@ -10,8 +10,8 @@ def summarize_messages_background(thread_id: str):
     state = main_agent.get_state(config)
     messages = state.values.get("messages", [])
     
-    # Check if there are more than 6 messages (each turn has User + AI, so history builds up)
-    if len(messages) > 6:
+    # Check if there are more than 15 messages (each turn has User + AI, so history builds up)
+    if len(messages) > 15:
         summary = state.values.get("summary", "")
         if summary:
             summary_message = summary
@@ -29,12 +29,13 @@ def summarize_messages_background(thread_id: str):
         try:
             llm = ChatGroq(model="openai/gpt-oss-120b", groq_api_key=os.getenv("GROQ_API_KEY"))
             response = llm.invoke([SystemMessage(content=summarizePrompt), HumanMessage(content=msg)])
-            
-            # Keep the last 6 messages, remove the rest
-            delete_messages = [RemoveMessage(id=m.id) for m in messages[:-6]]
+            print(f"Before deleting messages: {len(messages)}")
+            # Keep the last 15 messages, remove the rest
+            delete_messages = [RemoveMessage(id=m.id) for m in messages[:-15]]
+            print(f"After deleting messages: {len(messages)} , {len(delete_messages)} messages will be removed.")
             
             main_agent.update_state(config, {"summary": response.content, "messages": delete_messages})
-            print(f"Background summarization completed for {thread_id}. Kept last 6 messages.")
+            print(f"Background summarization completed for {thread_id}. Kept last 15 messages.")
         except Exception as e:
             print(f"Error during state update in background task: {e}")
 
