@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from api.services.auth.auth_service import get_current_user
 from api.services.conversations.conversation_service import (
     create_conversation,
@@ -8,15 +8,16 @@ from api.services.conversations.conversation_service import (
 )
 from api.schemas.api_schemas import ConversationCreateSchema
 from slowapi import Limiter
+from slowapi.util import get_remote_address
 
-limiter = Limiter()
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/v1/conversations", tags=["conversations"])
 
 
 # ── Create new conversation ───────────────────────────────────
 @limiter.limit("10/minute")
 @router.post("")
-def new_conversation(req:ConversationCreateSchema , user: dict = Depends(get_current_user)):
+def new_conversation(request: Request,req:ConversationCreateSchema , user: dict = Depends(get_current_user)):
     try:
         
         return create_conversation(user_id=user["sub"], title=req.title or "Untitled Conversation")
@@ -26,8 +27,7 @@ def new_conversation(req:ConversationCreateSchema , user: dict = Depends(get_cur
 
 # ── List all conversations for current user ───────────────────
 @router.get("")
-@limiter.limit("20/minute")
-def list_conversations(user: dict = Depends(get_current_user)):
+def list_conversations(request: Request,user: dict = Depends(get_current_user)):
     try:
         return get_conversations(user_id=user["sub"])
     except Exception as e:
@@ -36,8 +36,7 @@ def list_conversations(user: dict = Depends(get_current_user)):
 
 # ── Get messages for a conversation ──────────────────────────
 @router.get("/{conversation_id}/messages")
-@limiter.limit("30/minute")
-def list_messages(conversation_id: str, user: dict = Depends(get_current_user)):
+def list_messages(request: Request, conversation_id: str, user: dict = Depends(get_current_user)):
     try:
         convo = get_conversation_by_id(conversation_id)
         if not convo or str(convo["user_id"]) != user["sub"]:

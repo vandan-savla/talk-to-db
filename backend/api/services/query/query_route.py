@@ -1,5 +1,5 @@
 import json
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from langchain.messages import HumanMessage
 from langchain_core.messages import BaseMessage
 from app.main_agent import main_agent
@@ -7,15 +7,15 @@ from api.schemas.api_schemas import QueryRequest, QueryResponse
 from api.services.auth.auth_service import get_current_user
 from api.services.conversations.conversation_service import save_messages
 from slowapi import Limiter
-
-limiter = Limiter()
+from slowapi.util import get_remote_address
+limiter = Limiter(key_func=get_remote_address)  # global rate limit for simplicity
 
 router = APIRouter(prefix="/v1", tags=["query to master db"])
 
 
 @router.post("/query")
-@limiter.limit("10/minute")
-async def query_db(req: QueryRequest, user: dict = Depends(get_current_user)):
+@limiter.limit("10/second")
+async def query_db(request: Request, req: QueryRequest, user: dict = Depends(get_current_user)):
     try:
         result = main_agent.invoke(
             {"messages": [HumanMessage(content=req.question, name="user_query")]},
