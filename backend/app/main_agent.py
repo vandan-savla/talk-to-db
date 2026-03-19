@@ -7,7 +7,7 @@ from app.nodes.rewrite_user_query import rewrite_user_query
 from app.nodes.get_tables_schemas import get_tables_schemas
 from app.nodes.write_sql_query import write_sql_query
 from app.nodes.validate_query import validate_query
-from app.nodes.execute_sql_query import execute_sql_query
+from app.nodes.execute_sql_query import execute_sql_query_node
 from app.nodes.format_response import format_response
 from app.pydantic_models.node_schemas import ValidateQueryOutput, DeciderOutput
 from langchain_groq import ChatGroq
@@ -100,7 +100,7 @@ def build_graph():
     workflow.add_node("get_tables_schemas", get_tables_schemas)
     workflow.add_node("write_sql_query", write_sql_query)
     workflow.add_node("validate_query", validate_query)
-    workflow.add_node("execute_sql_query", execute_sql_query)
+    workflow.add_node("execute_sql_query", execute_sql_query_node)
     workflow.add_node("format_response", format_response)
     workflow.add_node("summarize_conversation", summarize_conversation)
 

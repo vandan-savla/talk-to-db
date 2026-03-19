@@ -1,16 +1,16 @@
 import psycopg2
-from psycopg2 import sql
+from psycopg2.extras import RealDictCursor
 import os 
 from dotenv import load_dotenv
 load_dotenv()
-def connect_to_db():
+def connect_to_master_db():
     try:
         connection = psycopg2.connect(
-            host=os.getenv("POSTGRES_HOST"),
-            port=os.getenv("POSTGRES_PORT"),
-            user=os.getenv("POSTGRES_USER"),
-            password=os.getenv("POSTGRES_PASSWORD"),
-            dbname=os.getenv("POSTGRES_DB")
+            host=os.getenv("POSTGRES_MASTER_HOST"),
+            port=os.getenv("POSTGRES_MASTER_PORT"),
+            user=os.getenv("POSTGRES_MASTER_USER"),
+            password=os.getenv("POSTGRES_MASTER_PASSWORD"),
+            dbname=os.getenv("POSTGRES_MASTER_DB")
         )
         print("Connection to database established successfully.")
         return connection
@@ -19,3 +19,18 @@ def connect_to_db():
         return None
     
     
+def connect_to_app_db():
+    try:
+        connection = psycopg2.connect(
+            host=os.getenv("POSTGRES_APP_HOST"),
+            port=os.getenv("POSTGRES_APP_PORT"),
+            user=os.getenv("POSTGRES_APP_USER"),
+            password=os.getenv("POSTGRES_APP_PASSWORD"),
+            dbname=os.getenv("POSTGRES_APP_DB"),
+            cursor_factory=RealDictCursor
+        )
+        print("Connection to app database established successfully.")
+        return connection
+    except Exception as e:
+        print(f"Error connecting to app database: {e}")
+        return None

@@ -10,10 +10,12 @@ def execute_sql_query_node(state: MessagesState) -> MessagesState:
         if msg.name == "write_sql_query":
             try:
                 candidate_sql = WriteSqlOutput.model_validate_json(msg.content).candidate_sql
+                print("Executing SQL:", candidate_sql)
             except:
                 pass
             break
-
+    print("Executing SQL:", candidate_sql)
+    
     result = execute_sql_query(candidate_sql)
 
     # If error came back, short circuit — don't send to format_response

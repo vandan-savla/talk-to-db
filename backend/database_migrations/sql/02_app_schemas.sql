@@ -8,11 +8,11 @@
 \c application_db
 
 
--- ── Extensions ───────────────────────────────────────────────
+-- Extensions 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 
--- ── Users ────────────────────────────────────────────────────
+-- Users 
 CREATE TABLE IF NOT EXISTS users (
     id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email         TEXT UNIQUE NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 
--- ── Conversations ─────────────────────────────────────────────
+-- Conversations 
 CREATE TABLE IF NOT EXISTS conversations (
     id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS conversations (
 );
 
 
--- ── Messages ──────────────────────────────────────────────────
+-- Messages 
 -- Stores only two rows per conversation turn:
 -- role='user'      → { "question": "..." }
 -- role='assistant' → { "answer": "...", "sql_query": "..." }
@@ -45,8 +45,7 @@ CREATE TABLE IF NOT EXISTS messages (
 );
 
 
--- ── Indexes ───────────────────────────────────────────────────
-CREATE INDEX IF NOT EXISTS idx_conversations_user_id   ON conversations(user_id);
+-- Indexes CREATE INDEX IF NOT EXISTS idx_conversations_user_id   ON conversations(user_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_thread_id  ON conversations(thread_id);
 CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_messages_created_at      ON messages(created_at);

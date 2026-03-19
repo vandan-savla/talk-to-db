@@ -1,7 +1,7 @@
 from datetime import datetime
 import os
 import json
-from utils.connect import connect_to_db
+from utils.connect import connect_to_master_db
 
 
 def generate_table_artifacts(version=None):
@@ -9,7 +9,7 @@ def generate_table_artifacts(version=None):
     if version is None:
         version = datetime.now().strftime("%Y_%m_%d_%H_%M")
 
-    connection = connect_to_db()
+    connection = connect_to_master_db()
     cursor = connection.cursor()
 
     column_query = """

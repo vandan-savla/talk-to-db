@@ -1,15 +1,15 @@
-from utils.connect import connect_to_db
+from utils.connect import connect_to_master_db
 
 def execute_sql_query(sql_query: str) -> list[dict]:
     conn = None
     cursor = None
     try:
+        print(f"[execute_sql_query] Received query: {sql_query}, {type(sql_query)}")  # Debug log
         # Security check before touching DB
-        stripped = sql_query.strip().upper()
-        if not stripped.startswith("SELECT"):
+        if not sql_query.lower() in ["SELECT"]:
             return [{"error": "Only SELECT queries are permitted."}]
 
-        conn = connect_to_db()
+        conn = connect_to_master_db()
         cursor = conn.cursor()
         cursor.execute(sql_query)
         columns = [desc[0] for desc in cursor.description]

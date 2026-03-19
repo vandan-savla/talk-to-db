@@ -35,7 +35,7 @@ def decider_node(state: MessagesState) -> MessagesState:
         Respond ONLY with valid JSON:
         {{
         "decision": true/false,
-        "response": "only fill this if decision is false — a short, safe reply to the user"
+        "response": "only fill this if decision is false — a short, safe reply to the user else empty string"
         }}
         """
 
