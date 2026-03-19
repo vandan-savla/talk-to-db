@@ -1,14 +1,16 @@
 import os
 import warnings
+import bcrypt
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-
 from dotenv import load_dotenv
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-import psycopg2.extras
+from utils.connect import connect_to_app_db     
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import HTTPException, Depends
 
-from utils.connect import connect_to_app_db
+bearer = HTTPBearer()
 
 warnings.filterwarnings("ignore", ".*error reading bcrypt version.*")
 
@@ -21,7 +23,6 @@ JWT_EXPIRY_DAYS = 7
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-import bcrypt
 
 def hash_password(plain: str) -> str:
     return bcrypt.hashpw(plain.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
@@ -125,3 +126,10 @@ def login_user(email: str, password: str) -> dict:
         raise ValueError("Login failed. Please try again.")
     finally:
         conn.close()
+        
+
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer)) -> dict:
+    try:
+        return decode_token(credentials.credentials)
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))

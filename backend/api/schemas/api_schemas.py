@@ -1,9 +1,9 @@
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 class QueryRequest(BaseModel):
     question: str
-    chat_id: str
+    conversation_id: str  
     
     
 class QueryResponse(BaseModel):
@@ -19,3 +19,5 @@ class LoginRequest(BaseModel):
     email: str
     password: str
     
+class ConversationCreateSchema(BaseModel):
+    title: Optional[str]

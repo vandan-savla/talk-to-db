@@ -26,7 +26,6 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS conversations (
     id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    thread_id  TEXT UNIQUE NOT NULL,
     title      TEXT DEFAULT 'Untitled Conversation',
     created_at TIMESTAMP DEFAULT NOW()
 );

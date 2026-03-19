@@ -9,8 +9,9 @@ uvicorn
 requests
 langgraph-checkpoint-sqlite
 langchain_groq
-passlib[bcrypt] 
 pyjwt 
 psycopg2-binary 
 python-jose 
 email-validator
+uuid
+slowapi
