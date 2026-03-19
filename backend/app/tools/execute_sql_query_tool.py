@@ -1,25 +1,27 @@
 from utils.connect import connect_to_db
-from langchain_core.tools import tool
 
-# @tool("execute_sql_query", return_direct=True)
-def execute_sql_query(sql_query: str, operation: str) -> list[dict]:
-    """
-    Execute the given SQL query and return the results as a list of dictionaries.
-    """
+def execute_sql_query(sql_query: str) -> list[dict]:
+    conn = None
+    cursor = None
     try:
-        if operation.lower() != "select":
-            raise ValueError("Only SELECT queries are allowed.")
-         
+        # Security check before touching DB
+        stripped = sql_query.strip().upper()
+        if not stripped.startswith("SELECT"):
+            return [{"error": "Only SELECT queries are permitted."}]
+
         conn = connect_to_db()
         cursor = conn.cursor()
         cursor.execute(sql_query)
         columns = [desc[0] for desc in cursor.description]
         results = cursor.fetchall()
-        dict_results = [dict(zip(columns, row)) for row in results]
-        return dict_results
-    
+        return [dict(zip(columns, row)) for row in results]
+
     except Exception as e:
-        return [{"error": str(e)}]
+        print(f"[execute_sql_query] Internal error: {e}")  # log internally only
+        return [{"error": "Query execution failed. Please try a different question."}]
+
     finally:
-        cursor.close()
-        conn.close()
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()

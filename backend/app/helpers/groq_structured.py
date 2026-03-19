@@ -1,5 +1,5 @@
 import copy
-
+from langchain_core.messages import BaseMessage
 from langchain_groq import ChatGroq
 from pydantic import BaseModel
 
@@ -19,6 +19,7 @@ def _close_object_schemas(schema: dict) -> dict:
 def invoke_groq_structured(
     *,
     schema_model: type[BaseModel],
+    # messages: list[BaseMessage],
     messages: list,
     model_name: str,
     groq_api_key: str | None,
@@ -35,4 +36,5 @@ def invoke_groq_structured(
         }
     )
     response = llm.invoke(messages)
+    print(f"Response: {response.model_dump()}")
     return schema_model.model_validate_json(response.content)
