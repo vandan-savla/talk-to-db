@@ -1,22 +1,22 @@
 "use client";
 
 import { useEffect } from "react";
+import { useParams } from "next/navigation";
 import { withAuth } from "@/lib/with_auth";
-import { useChat } from "@/lib/contexts/chat_context";
-import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/chat/Sidebar";
 import { MessageList } from "@/components/chat/MessageList";
 import { MessageInput } from "@/components/chat/MessageInput";
+import { useChat } from "@/lib/contexts/chat_context";
 
-function ChatPage() {
-    const { conversations, isFetching } = useChat();
-    const router = useRouter();
+function SelectedChatPage() {
+    const { id } = useParams();
+    const { setActiveConversation } = useChat();
 
     useEffect(() => {
-        if (!isFetching && conversations.length > 0) {
-            router.replace(`/chat/${conversations[0].id}`);
+        if (id) {
+            setActiveConversation(id as string);
         }
-    }, [conversations, isFetching, router]);
+    }, [id, setActiveConversation]);
 
     return (
         <div className="flex h-screen overflow-hidden bg-background">
@@ -30,4 +30,4 @@ function ChatPage() {
     );
 }
 
-export default withAuth(ChatPage);
+export default withAuth(SelectedChatPage);

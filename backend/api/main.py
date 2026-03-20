@@ -11,7 +11,7 @@ from slowapi.errors import RateLimitExceeded
 
 load_dotenv()
 
-origins = [ os.getenv("FRONTEND_URL", "http://localhost:3000"), os.getenv("FRONTEND_PROD_URL") ]  # allow env var override, default to 
+# origins = [ os.getenv("FRONTEND_URL", "http://localhost:3000"), os.getenv("FRONTEND_PROD_URL") ]  # allow env var override, default to 
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -20,9 +20,10 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  
+    allow_origins=["*"],  
     allow_credentials=True,
-    allow_methods=["GET","POST"],
+    # allow_methods=["GET","POST", "PATCH"],
+    allow_methods=["*"],
     allow_headers=["*"]
 )
 

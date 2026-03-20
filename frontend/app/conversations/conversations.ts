@@ -20,7 +20,7 @@ export interface Message {
 export const conversationsApi = {
     // Create new conversation — returns id used as thread_id
     create: async (): Promise<Conversation> => {
-        const { data } = await api.post("/v1/conversations");
+        const { data } = await api.post("/v1/conversations", {});
         return data;
     },
 
@@ -35,4 +35,11 @@ export const conversationsApi = {
         const { data } = await api.get(`/v1/conversations/${conversationId}/messages`);
         return data;
     },
+
+    // Update conversation title
+    updateTitle: async (conversationId: string, title: string): Promise<Conversation> => {
+        const { data } = await api.patch(`/v1/conversations/${conversationId}`, { title });
+        return data;
+    },
+
 };

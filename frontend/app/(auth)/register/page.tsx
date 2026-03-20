@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuthStore } from "@/app/auth/auth_store";
+import { useAuth } from "@/lib/contexts/auth_context";
 import { authApi } from "@/app/auth/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 export default function RegisterPage() {
     const router = useRouter();
-    const setAuth = useAuthStore((s) => s.setAuth);
+    const { setAuth } = useAuth();
 
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");

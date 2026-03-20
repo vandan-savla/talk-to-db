@@ -2,15 +2,27 @@
 
 import { useEffect, useRef } from "react";
 import { SqlBlock } from "./SqlBlock";
-import { useChatStore } from "@/app/conversations/conversation_store";
-import { useMessages } from "@/app/conversations/use_conversation";
+import { useChat } from "@/lib/contexts/chat_context";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 
 export function MessageList() {
     const bottomRef = useRef<HTMLDivElement>(null);
-    const { activeConversationId, pendingMessages, isLoading } = useChatStore();
-    const { data: messages, isLoading: loadingMessages } = useMessages(activeConversationId);
+    const { 
+        activeConversationId, 
+        messagesByConvo, 
+        pendingMessages, 
+        isLoading,
+        fetchMessages 
+    } = useChat();
+
+    const messages = activeConversationId ? messagesByConvo[activeConversationId] || [] : [];
+
+    useEffect(() => {
+        if (activeConversationId) {
+            fetchMessages(activeConversationId);
+        }
+    }, [activeConversationId, fetchMessages]);
 
     // Auto scroll to bottom on new message
     useEffect(() => {
@@ -31,21 +43,9 @@ export function MessageList() {
         );
     }
 
-    if (loadingMessages) {
-        return (
-            <div className="flex-1 flex flex-col gap-4 p-4">
-                {[...Array(3)].map((_, i) => (
-                    <div key={i} className={cn("flex", i % 2 === 0 ? "justify-end" : "justify-start")}>
-                        <div className={cn("h-12 rounded-2xl bg-muted animate-pulse", i % 2 === 0 ? "w-48" : "w-64")} />
-                    </div>
-                ))}
-            </div>
-        );
-    }
+    const allMessages = [...messages, ...pendingMessages];
 
-    const allMessages = [...(messages || []), ...pendingMessages];
-
-    if (allMessages.length === 0) {
+    if (allMessages.length === 0 && !isLoading) {
         return (
             <div className="flex-1 flex items-center justify-center">
                 <p className="text-sm text-muted-foreground">Send a message to get started</p>
@@ -97,4 +97,4 @@ export function MessageList() {
             <div ref={bottomRef} />
         </div>
     );
-}
+}

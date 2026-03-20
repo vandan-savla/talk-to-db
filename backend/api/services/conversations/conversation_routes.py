@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
+from typing import List, Dict, Any, Optional
+from fastapi import APIRouter, HTTPException, Depends, Request, Body
 from api.services.auth.auth_service import get_current_user
 from api.services.conversations.conversation_service import (
     create_conversation,
     get_conversations,
     get_messages,
-    get_conversation_by_id
+    get_conversation_by_id,
+    update_conversation_title
 )
 from api.schemas.api_schemas import ConversationCreateSchema
 from slowapi import Limiter
@@ -17,10 +19,10 @@ router = APIRouter(prefix="/v1/conversations", tags=["conversations"])
 # ── Create new conversation ───────────────────────────────────
 @limiter.limit("10/minute")
 @router.post("")
-def new_conversation(request: Request,req:ConversationCreateSchema , user: dict = Depends(get_current_user)):
+def new_conversation(request: Request, req: Optional[ConversationCreateSchema] = None, user: dict = Depends(get_current_user)):
     try:
-        
-        return create_conversation(user_id=user["sub"], title=req.title or "Untitled Conversation")
+        title = req.title if req else "Untitled Conversation"
+        return create_conversation(user_id=user["sub"], title=title or "Untitled Conversation")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -42,6 +44,26 @@ def list_messages(request: Request, conversation_id: str, user: dict = Depends(g
         if not convo or str(convo["user_id"]) != user["sub"]:
             raise HTTPException(status_code=404, detail="Conversation not found")
         return get_messages(conversation_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Update conversation title ─────────────────────────────
+@router.patch("/{conversation_id}")
+def update_title(request: Request, conversation_id: str, req: Optional[ConversationCreateSchema] = None, user: dict = Depends(get_current_user)):
+    try:
+        convo = get_conversation_by_id(conversation_id)
+        if not convo or str(convo["user_id"]) != user["sub"]:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        title = req.title if req else None
+        if not title:
+            raise HTTPException(status_code=400, detail="Title is required")
+            
+        update_conversation_title(conversation_id, title)
+        return {"id": conversation_id, "title": title}
     except HTTPException:
         raise
     except Exception as e:

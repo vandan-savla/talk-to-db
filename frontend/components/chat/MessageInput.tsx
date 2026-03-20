@@ -4,15 +4,14 @@ import { useState, useRef, KeyboardEvent } from "react";
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useChatStore } from "@/app/conversations/conversation_store";
-import { useAppendMessages, useCreateConversation } from "@/app/conversations/use_conversation";
+import { useChat } from "@/lib/contexts/chat_context";
+import { conversationsApi } from "@/app/conversations/conversations";
 import { queryApi } from "@/app/query/query";
 import { toast } from "sonner";
 
 export function MessageInput() {
     const [input, setInput] = useState("");
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-
 
     const {
         activeConversationId,
@@ -21,10 +20,9 @@ export function MessageInput() {
         clearPending,
         setLoading,
         isLoading,
-    } = useChatStore();
-
-    const appendMessages = useAppendMessages(activeConversationId);
-    const createConversation = useCreateConversation();
+        appendRealMessages,
+        addConversation,
+    } = useChat();
 
     async function handleSend() {
         const question = input.trim();
@@ -32,26 +30,28 @@ export function MessageInput() {
 
         setInput("");
 
-        // Create conversation if none active
-        let conversationId = activeConversationId;
-        if (!conversationId) {
-            const convo = await createConversation.mutateAsync();
-            conversationId = convo.id;
-            setActiveConversation(conversationId);
-        }
-
-        // Optimistic user message
-        const tempUserMsg = {
-            id: `temp-user-${Date.now()}`,
-            role: "user" as const,
-            content: { question },
-            created_at: new Date().toISOString(),
-        };
-        addPendingMessage(tempUserMsg);
-        setLoading(true);
-
         try {
-            const res = await queryApi.ask(question, conversationId);
+            // Create conversation if none active
+            let conversationId = activeConversationId;
+            if (!conversationId) {
+                const convo = await conversationsApi.create();
+                conversationId = convo.id;
+                addConversation(convo);
+                setActiveConversation(conversationId);
+            }
+
+            // Optimistic user message
+            const tempUserMsg = {
+                id: `temp-user-${Date.now()}`,
+                role: "user" as const,
+                content: { question },
+                created_at: new Date().toISOString(),
+            };
+            
+            addPendingMessage(tempUserMsg);
+            setLoading(true);
+
+            const res = await queryApi.ask(question, conversationId!);
 
             // Append real messages to cache, clear pending
             const assistantMsg = {
@@ -60,7 +60,8 @@ export function MessageInput() {
                 content: { answer: res.answer, sql_query: res.sql_query },
                 created_at: new Date().toISOString(),
             };
-            appendMessages(tempUserMsg, assistantMsg);
+            
+            appendRealMessages(conversationId!, tempUserMsg, assistantMsg);
             clearPending();
         } catch (err: any) {
             clearPending();
@@ -107,4 +108,4 @@ export function MessageInput() {
             </p>
         </div>
     );
-}
+}

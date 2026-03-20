@@ -2,12 +2,12 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/app/auth/auth_store";
+import { useAuth } from "@/lib/contexts/auth_context";
 
 export function withAuth<T extends object>(Component: React.ComponentType<T>) {
     return function ProtectedRoute(props: T) {
         const router = useRouter();
-        const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+        const { isAuthenticated } = useAuth();
 
         useEffect(() => {
             if (!isAuthenticated) {
