@@ -46,11 +46,20 @@ export default function MermaidERD({ schema }: { schema: SchemaData | null }) {
                 for (const [tName, cols] of Object.entries(tables)) {
                     erdText += `  ${tName} {\n`;
                     cols.forEach(c => {
-                        const cleanType = c.dType.replace(/\s+/g, '-');
-                        erdText += `    ${cleanType} ${c.cName}${c.isPK ? " PK" : ""}\n`;
+                        // Shorten some common types for better fit
+                        let shortType = c.dType.toLowerCase()
+                            .replace("character varying", "varchar")
+                            .replace("integer", "int")
+                            .replace("timestamp without time zone", "timestamp")
+                            .replace(/\s+/g, '-');
+                        
+                        // Mermaid syntax is: dataType fieldName PK
+                        // This renders as: fieldName (first column), dataType (second column)
+                        erdText += `    ${shortType} ${c.cName}${c.isPK ? " PK" : ""}\n`;
                     });
                     erdText += "  }\n";
                 }
+
 
                 // Add relationships
                 currentSchema.relationships.forEach((rel: any) => {

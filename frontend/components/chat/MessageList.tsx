@@ -5,15 +5,17 @@ import { SqlBlock } from "./SqlBlock";
 import { useChat } from "@/lib/contexts/chat_context";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export function MessageList() {
+
     const bottomRef = useRef<HTMLDivElement>(null);
-    const { 
-        activeConversationId, 
-        messagesByConvo, 
-        pendingMessages, 
+    const {
+        activeConversationId,
+        messagesByConvo,
+        pendingMessages,
         isLoading,
-        fetchMessages 
+        fetchMessages
     } = useChat();
 
     const messages = activeConversationId ? messagesByConvo[activeConversationId] || [] : [];
@@ -72,9 +74,27 @@ export function MessageList() {
                                 <p>{text}</p>
                             ) : (
                                 <div className="prose prose-sm dark:prose-invert max-w-none">
-                                    <ReactMarkdown>{text || ""}</ReactMarkdown>
+                                    <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        components={{
+                                            table: ({ node, ...props }) => (
+                                                <div className="my-2 border rounded-md overflow-hidden bg-background shadow-sm">
+                                                    <div className="overflow-auto max-h-[250px]">
+                                                        <table className="min-w-full divide-y bg-background relative border-collapse" {...props} />
+                                                    </div>
+                                                </div>
+                                            ),
+                                            thead: ({ node, ...props }) => <thead className="bg-muted/80 backdrop-blur-sm sticky top-0 z-10" {...props} />,
+                                            th: ({ node, ...props }) => <th className="px-3 py-2 text-left font-semibold text-[12px] border-b whitespace-nowrap" {...props} />,
+                                            td: ({ node, ...props }) => <td className="px-3 py-1.5 text-[12px] border-b whitespace-nowrap text-muted-foreground" {...props} />
+                                        }}
+
+                                    >
+                                        {text || ""}
+                                    </ReactMarkdown>
                                     {sql && <SqlBlock sql={sql} />}
                                 </div>
+
                             )}
                         </div>
                     </div>
@@ -97,4 +117,4 @@ export function MessageList() {
             <div ref={bottomRef} />
         </div>
     );
-}
+}

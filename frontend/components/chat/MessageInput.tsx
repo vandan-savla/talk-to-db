@@ -95,17 +95,18 @@ export function MessageInput() {
 
     return (
         <div className="border-t bg-background px-4 py-3">
-            <div className="max-w-3xl mx-auto mb-3 flex flex-wrap gap-2">
+            <div className="max-w-3xl mx-auto mb-3 flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
                 {SUGGESTIONS.map((s, i) => (
                     <button
                         key={i}
                         onClick={() => handleSuggestion(s)}
-                        className="text-[10px] md:text-xs px-2.5 py-1 rounded-full border bg-muted/30 hover:bg-primary/10 hover:border-primary/30 transition-colors text-muted-foreground hover:text-primary whitespace-nowrap"
+                        className="text-[10px] md:text-xs px-3 py-1.5 rounded-full border bg-muted/30 hover:bg-primary/10 hover:border-primary/30 transition-colors text-muted-foreground hover:text-primary whitespace-nowrap shrink-0"
                     >
                         {s}
                     </button>
                 ))}
             </div>
+
 
             <div className="max-w-3xl mx-auto flex gap-2 items-end">
                 <Textarea

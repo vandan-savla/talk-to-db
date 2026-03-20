@@ -75,64 +75,62 @@ def explorer_query(request: Request, req: dict, user: dict = Depends(get_current
 
 @router.get("/explorer/schema")
 def get_schema(request: Request, user: dict = Depends(get_current_user)):
-    """Fetches table schemas and relationships for the ERD."""
-    conn = connect_to_master_db()
-    if not conn:
-        raise HTTPException(status_code=500, detail="Could not connect to master database")
-    
+    """Fetches table schemas and relationships from JSON artifacts instead of the DB."""
+    import os
+    from pathlib import Path
+
+    # Base directory for artifacts
+    base_path = Path("e:/Codes/AI/talk to db/backend/.artifacts/public")
+    if not base_path.exists():
+        # Fallback if the above path is not found (e.g. running from a different context)
+        base_path = Path(".artifacts/public")
+
+    columns_res = []
+    relationships_res = []
+
+    if not base_path.exists():
+        return {"columns": [], "relationships": []}
+
     try:
-        with conn.cursor() as cur:
-            # Get tables and columns
-            cur.execute("""
-                SELECT 
-                    t.table_name, 
-                    c.column_name, 
-                    c.data_type,
-                    CASE WHEN cu.column_name IS NOT NULL THEN TRUE ELSE FALSE END as is_primary
-                FROM 
-                    information_schema.tables t
-                JOIN 
-                    information_schema.columns c ON t.table_name = c.table_name
-                LEFT JOIN 
-                    information_schema.key_column_usage cu ON t.table_name = cu.table_name 
-                    AND c.column_name = cu.column_name
-                    AND cu.constraint_name IN (
-                        SELECT constraint_name 
-                        FROM information_schema.table_constraints 
-                        WHERE constraint_type = 'PRIMARY KEY'
-                    )
-                WHERE 
-                    t.table_schema = 'public'
-                ORDER BY 
-                    t.table_name, c.ordinal_position;
-            """)
-            columns = cur.fetchall()
+        # Iterate through table directories
+        for table_dir in base_path.iterdir():
+            if not table_dir.is_dir():
+                continue
             
-            # Get foreign keys for relationships
-            cur.execute("""
-                SELECT
-                    tc.table_name, 
-                    kcu.column_name, 
-                    ccu.table_name AS foreign_table_name,
-                    ccu.column_name AS foreign_column_name 
-                FROM 
-                    information_schema.table_constraints AS tc 
-                    JOIN information_schema.key_column_usage AS kcu
-                      ON tc.constraint_name = kcu.constraint_name
-                      AND tc.table_schema = kcu.table_schema
-                    JOIN information_schema.constraint_column_usage AS ccu
-                      ON ccu.constraint_name = tc.constraint_name
-                      AND ccu.table_schema = tc.table_schema
-                WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema='public';
-            """)
-            relationships = cur.fetchall()
+            # Find the latest artifact JSON for this table
+            artifacts = sorted(list(table_dir.glob("artifact_*.json")), reverse=True)
+            if not artifacts:
+                continue
             
-            return {
-                "columns": columns,
-                "relationships": relationships
-            }
+            latest_file = artifacts[0]
+            with open(latest_file, "r") as f:
+                data = json.load(f)
+                
+                table_name = data.get("table_name", table_dir.name)
+                
+                # Parse columns
+                for col in data.get("columns", []):
+                    c_name = col.get("name")
+                    c_type = col.get("type", "unknown")
+                    c_desc = col.get("description", "").lower()
+                    is_pk = "primary key" in c_desc or c_name == f"{table_name}_id"
+                    
+                    columns_res.append([table_name, c_name, c_type, is_pk])
+                
+                # Parse relationships
+                for rel in data.get("relationships", []):
+                    relationships_res.append([
+                        table_name,
+                        rel.get("column"),
+                        rel.get("references_table"),
+                        rel.get("references_column")
+                    ])
+                    
+        return {
+            "columns": columns_res,
+            "relationships": relationships_res
+        }
     except Exception as e:
         print(f"[get_schema] Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
+

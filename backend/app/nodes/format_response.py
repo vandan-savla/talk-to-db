@@ -21,10 +21,16 @@ def format_response(state: MessagesState) -> MessagesState:
             except: pass
             break
 
-    system_prompt = f"""You are a helpful database assistant. Explain the SQL result in natural language.
-            - Use markdown tables for multi-row results
-            - Format SQL with proper indentation
-            - Be concise but highlight key insights
+    system_prompt = f"""You are a helpful database assistant. Explain the SQL result in natural language using this structure:
+            1. **Result Overview**: A brief 1-2 sentence summary.
+            2. **Data Table**: Use a clean Markdown table for any multi-row result.
+            3. **Key insights**: 2-3 bullet points highlighting important trends or facts from the data.
+
+            Rules:
+            - ALWAYS use Markdown tables for multi-row data. 
+            - Use proper markdown bolding and lists.
+            - If no data was found, just state that clearly.
+            - Format SQL with proper indentation.
 
             SQL executed:
             {candidate_sql}
@@ -33,8 +39,9 @@ def format_response(state: MessagesState) -> MessagesState:
             {sql_result}
 
             Respond ONLY with valid JSON:
-            {{"answer": "...(markdown)...", "sql_query": "...(formatted SQL)..."}}
+            {{"answer": "...(markdown strings)...", "sql_query": "...(formatted SQL)..."}}
         """
+
 
     model = ChatGroq(
         model="openai/gpt-oss-120b",
