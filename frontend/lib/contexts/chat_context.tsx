@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { useRouter } from "next/navigation";
+
 import { Conversation, Message, conversationsApi } from "@/app/conversations/conversations";
 
 interface ChatContextType {
@@ -15,7 +17,9 @@ interface ChatContextType {
     fetchMessages: (id: string) => Promise<void>;
     addConversation: (convo: Conversation) => void;
     updateConversationTitle: (id: string, title: string) => Promise<void>;
+    deleteConversation: (id: string) => Promise<void>;
     addPendingMessage: (msg: Message) => void;
+
     clearPending: () => void;
     setLoading: (loading: boolean) => void;
     appendRealMessages: (id: string, userMsg: Message, assistantMsg: Message) => void;
@@ -31,7 +35,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
 
+    const router = useRouter();
+
     const fetchConversations = useCallback(async () => {
+
         setIsFetching(true);
         try {
             const data = await conversationsApi.list();
@@ -65,7 +72,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         const savedMessages = localStorage.getItem("chat_messages");
         if (savedConvos) setConversations(JSON.parse(savedConvos));
         if (savedMessages) setMessagesByConvo(JSON.parse(savedMessages));
-        
+
         fetchConversations();
     }, [fetchConversations]);
 
@@ -87,7 +94,24 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         setConversations(prev => prev.map(c => c.id === id ? { ...c, title } : c));
     };
 
+    const deleteConversation = async (id: string) => {
+        await conversationsApi.delete(id);
+        setConversations(prev => prev.filter(c => c.id !== id));
+        setMessagesByConvo(prev => {
+            const next = { ...prev };
+            delete next[id];
+            return next;
+        });
+
+        if (activeConversationId === id) {
+            setActiveConversationId(null);
+            router.push("/chat");
+        }
+    };
+
+
     const appendRealMessages = (id: string, userMsg: Message, assistantMsg: Message) => {
+
         setMessagesByConvo(prev => {
             const current = prev[id] || [];
             return { ...prev, [id]: [...current, userMsg, assistantMsg] };
@@ -107,7 +131,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             fetchMessages,
             addConversation,
             updateConversationTitle,
+            deleteConversation,
             addPendingMessage: (msg) => setPendingMessages(prev => [...prev, msg]),
+
             clearPending: () => setPendingMessages([]),
             setLoading: setIsLoading,
             appendRealMessages

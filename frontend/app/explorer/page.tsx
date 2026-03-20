@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Play, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,46 +19,64 @@ const MermaidERD = dynamic(() => import("@/components/explorer/MermaidERD"), { s
 
 // ── Results table ─────────────────────────────────────────────
 function ResultsTable({ rows }: { rows: Record<string, any>[] }) {
-    if (!rows.length) return <p className="text-sm text-muted-foreground p-4">No results</p>;
+    if (!rows.length) return <p className="text-sm text-muted-foreground p-8 text-center bg-muted/20 rounded-lg">No results to display</p>;
     const cols = Object.keys(rows[0]);
 
     return (
-        <ScrollArea className="w-full">
-            <table className="w-full text-xs">
-                <thead>
-                    <tr className="border-b bg-muted/50">
-                        {cols.map((col) => (
-                            <th key={col} className="text-left px-3 py-2 font-medium text-muted-foreground whitespace-nowrap">
-                                {col}
-                            </th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows.map((row, i) => (
-                        <tr key={i} className="border-b hover:bg-muted/30 transition-colors">
+        <div className="relative border rounded-lg overflow-hidden bg-card">
+            <div className="overflow-auto max-h-[450px] w-full custom-scrollbar">
+                <table className="w-full text-xs text-left border-collapse">
+                    <thead className="sticky top-0 z-20 shadow-sm">
+                        <tr className="bg-muted ring-1 ring-border">
                             {cols.map((col) => (
-                                <td key={col} className="px-3 py-2 whitespace-nowrap font-mono">
-                                    {String(row[col] ?? "null")}
-                                </td>
+                                <th key={col} className="px-4 py-3 font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap border-r last:border-r-0">
+                                    {col}
+                                </th>
                             ))}
                         </tr>
-                    ))}
-                </tbody>
-            </table>
-        </ScrollArea>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                        {rows.map((row, i) => (
+                            <tr key={i} className="hover:bg-accent/40 transition-colors group">
+                                {cols.map((col) => (
+                                    <td key={col} className="px-4 py-2.5 whitespace-nowrap font-mono text-[11px] border-r last:border-r-0 max-w-[400px] truncate group-hover:max-w-none group-hover:whitespace-normal group-hover:break-words">
+                                        {String(row[col] ?? "null")}
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     );
 }
 
+
 // ── Main page ─────────────────────────────────────────────────
+
 function ExplorerPage() {
     const router = useRouter();
     const [sql, setSql] = useState("SELECT * FROM products LIMIT 10;");
     const [results, setResults] = useState<Record<string, any>[] | null>(null);
     const [running, setRunning] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [schema, setSchema] = useState<any>(null);
+
+    useEffect(() => {
+        async function fetchSchema() {
+            try {
+                const { data } = await api.get("/v1/explorer/schema");
+                setSchema(data);
+            } catch (err) {
+                console.error("Failed to fetch schema", err);
+            }
+        }
+        fetchSchema();
+    }, []);
 
     async function runQuery() {
+
         if (!sql.trim()) return;
         setRunning(true);
         try {
@@ -96,8 +115,9 @@ function ExplorerPage() {
                         <CardTitle className="text-base">Schema</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <MermaidERD />
+                        <MermaidERD schema={schema} />
                     </CardContent>
+
                 </Card>
 
                 {/* Query Editor */}

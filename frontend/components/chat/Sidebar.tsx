@@ -31,8 +31,10 @@ export function Sidebar() {
         fetchConversations,
         isFetching,
         updateConversationTitle,
+        deleteConversation,
         addConversation
     } = useChat();
+
 
     const [mobileOpen, setMobileOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -188,8 +190,20 @@ export function Sidebar() {
                                         >
                                             <Pencil className="w-3.5 h-3.5" />
                                         </button>
-
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (confirm("Are you sure you want to delete this conversation?")) {
+                                                    deleteConversation(c.id);
+                                                }
+                                            }}
+                                            className="p-1 text-muted-foreground hover:text-destructive"
+                                            title="Delete"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
                                     </div>
+
                                 )}
                             </div>
                         ))}
@@ -209,7 +223,7 @@ export function Sidebar() {
                     Explorer
                 </button>
                 <div className="flex items-center justify-between px-3 py-2">
-                    <span className="text-xs text-muted-foreground truncate max-w-[120px]">
+                    <span className="text-xs text-muted-foreground truncate max-w-120px">
                         {user?.email}
                     </span>
                     <Button

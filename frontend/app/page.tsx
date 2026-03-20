@@ -2,15 +2,19 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/app/auth/auth_store";
+import { useAuth } from "@/lib/contexts/auth_context";
 
 export default function Home() {
   const router = useRouter();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { isAuthenticated, isInitialized } = useAuth();
 
   useEffect(() => {
+    // Wait for context to initialize
+    if (!isInitialized) return;
+    
     router.replace(isAuthenticated ? "/chat" : "/login");
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isInitialized, router]);
+
 
   return null;
 }

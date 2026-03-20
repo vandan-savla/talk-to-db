@@ -47,7 +47,7 @@ export function MessageInput() {
                 content: { question },
                 created_at: new Date().toISOString(),
             };
-            
+
             addPendingMessage(tempUserMsg);
             setLoading(true);
 
@@ -60,7 +60,7 @@ export function MessageInput() {
                 content: { answer: res.answer, sql_query: res.sql_query },
                 created_at: new Date().toISOString(),
             };
-            
+
             appendRealMessages(conversationId!, tempUserMsg, assistantMsg);
             clearPending();
         } catch (err: any) {
@@ -81,8 +81,32 @@ export function MessageInput() {
         }
     }
 
+    const SUGGESTIONS = [
+        "How many products are there?",
+        "Show me top 5 products by quantity?",
+        "Total sales happened in December 2025?",
+        "Show me top 5 expensive and cheapest products?"
+    ];
+
+    function handleSuggestion(text: string) {
+        setInput(text);
+        textareaRef.current?.focus();
+    }
+
     return (
         <div className="border-t bg-background px-4 py-3">
+            <div className="max-w-3xl mx-auto mb-3 flex flex-wrap gap-2">
+                {SUGGESTIONS.map((s, i) => (
+                    <button
+                        key={i}
+                        onClick={() => handleSuggestion(s)}
+                        className="text-[10px] md:text-xs px-2.5 py-1 rounded-full border bg-muted/30 hover:bg-primary/10 hover:border-primary/30 transition-colors text-muted-foreground hover:text-primary whitespace-nowrap"
+                    >
+                        {s}
+                    </button>
+                ))}
+            </div>
+
             <div className="max-w-3xl mx-auto flex gap-2 items-end">
                 <Textarea
                     ref={textareaRef}
@@ -108,4 +132,5 @@ export function MessageInput() {
             </p>
         </div>
     );
-}
+}
+

@@ -7,15 +7,16 @@ import { useAuth } from "@/lib/contexts/auth_context";
 export function withAuth<T extends object>(Component: React.ComponentType<T>) {
     return function ProtectedRoute(props: T) {
         const router = useRouter();
-        const { isAuthenticated } = useAuth();
+        const { isAuthenticated, isInitialized } = useAuth();
 
         useEffect(() => {
-            if (!isAuthenticated) {
+            if (isInitialized && !isAuthenticated) {
                 router.replace("/login");
             }
-        }, [isAuthenticated, router]);
+        }, [isAuthenticated, isInitialized, router]);
 
-        if (!isAuthenticated) return null;
+        if (!isInitialized || !isAuthenticated) return null;
+
 
         return <Component {...props} />;
     };

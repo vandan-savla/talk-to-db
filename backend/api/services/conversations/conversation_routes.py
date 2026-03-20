@@ -4,6 +4,7 @@ from api.services.auth.auth_service import get_current_user
 from api.services.conversations.conversation_service import (
     create_conversation,
     get_conversations,
+    delete_conversation,
     get_messages,
     get_conversation_by_id,
     update_conversation_title
@@ -64,6 +65,22 @@ def update_title(request: Request, conversation_id: str, req: Optional[Conversat
             
         update_conversation_title(conversation_id, title)
         return {"id": conversation_id, "title": title}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Delete conversation ───────────────────────────────────────
+@router.delete("/{conversation_id}")
+def delete_convo(request: Request, conversation_id: str, user: dict = Depends(get_current_user)):
+    try:
+        convo = get_conversation_by_id(conversation_id)
+        if not convo or str(convo["user_id"]) != user["sub"]:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+            
+        delete_conversation(conversation_id)
+        return {"status": "deleted", "id": conversation_id}
     except HTTPException:
         raise
     except Exception as e:

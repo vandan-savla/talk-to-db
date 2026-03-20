@@ -20,7 +20,8 @@ export interface Message {
 export const conversationsApi = {
     // Create new conversation — returns id used as thread_id
     create: async (): Promise<Conversation> => {
-        const { data } = await api.post("/v1/conversations", {});
+        const { data } = await api.post("/v1/conversations", { title: "New Conversation" });
+        console.log("Creating new conversation...", data);
         return data;
     },
 
@@ -42,4 +43,8 @@ export const conversationsApi = {
         return data;
     },
 
-};
+    // Delete conversation
+    delete: async (conversationId: string): Promise<void> => {
+        await api.delete(`/v1/conversations/${conversationId}`);
+    },
+};

@@ -13,6 +13,7 @@ interface AuthContextType {
     user: User | null;
     token: string | null;
     isAuthenticated: boolean;
+    isInitialized: boolean;
     setAuth: (token: string, user: User) => void;
     logout: () => void;
 }
@@ -22,6 +23,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     // Initialize from storage
     useEffect(() => {
@@ -29,7 +31,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const savedUser = localStorage.getItem("user");
         if (savedToken) setToken(savedToken);
         if (savedUser) setUser(JSON.parse(savedUser));
+        setIsInitialized(true);
     }, []);
+
 
     const setAuth = (newToken: string, newUser: User) => {
         setToken(newToken);
@@ -50,9 +54,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             user,
             token,
             isAuthenticated: !!token,
+            isInitialized,
             setAuth,
             logout
         }}>
+
             {children}
         </AuthContext.Provider>
     );

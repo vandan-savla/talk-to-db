@@ -143,3 +143,21 @@ def get_messages(conversation_id: str) -> list[dict]:
         ]
     finally:
         conn.close()
+
+
+# ── Delete a conversation ────────────────────────────────────
+def delete_conversation(conversation_id: str):
+    conn = connect_to_app_db()
+    try:
+        with conn.cursor() as cur:
+            # Delete messages first (if not handled by CASCADE)
+            cur.execute("DELETE FROM messages WHERE conversation_id = %s", (conversation_id,))
+            # Delete conversation
+            cur.execute("DELETE FROM conversations WHERE id = %s", (conversation_id,))
+            conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(f"[delete_conversation] Error: {e}")
+        raise
+    finally:
+        conn.close()
