@@ -8,6 +8,8 @@ from api.services.auth.auth_service import get_current_user
 from api.services.conversations.conversation_service import save_messages
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+
+from app.tools.execute_sql_query_tool import execute_sql_query
 limiter = Limiter(key_func=get_remote_address)  # global rate limit for simplicity
 
 router = APIRouter(prefix="/v1", tags=["query to master db"])
@@ -58,3 +60,13 @@ async def query_db(request: Request, req: QueryRequest, user: dict = Depends(get
             status_code=500,
             detail="Something went wrong. Please try again."  # never expose internals
         )
+
+
+@router.post("/explorer/query")
+@limiter.limit("5/second")
+def explorer_query(request: Request, req: dict, user: dict = Depends(get_current_user)):
+    sql = req.get("sql", "").strip()
+    if not sql.lower().startswith("select"):
+        raise HTTPException(status_code=400, detail="Only SELECT queries allowed")
+    result = execute_sql_query(sql)
+    return {"rows": result}

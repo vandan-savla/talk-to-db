@@ -6,7 +6,8 @@ def execute_sql_query(sql_query: str) -> list[dict]:
     try:
         print(f"[execute_sql_query] Received query: {sql_query}, {type(sql_query)}")  # Debug log
         # Security check before touching DB
-        if not sql_query.lower() in ["SELECT"]:
+        
+        if not sql_query.strip().lower().startswith("select"):
             return [{"error": "Only SELECT queries are permitted."}]
 
         conn = connect_to_master_db()
