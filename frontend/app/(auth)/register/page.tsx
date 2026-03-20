@@ -70,7 +70,7 @@ export default function RegisterPage() {
                                 autoComplete="email"
                             />
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-2 my-3">
                             <Label htmlFor="password">Password</Label>
                             <Input
                                 id="password"
