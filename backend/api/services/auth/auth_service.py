@@ -5,7 +5,6 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from dotenv import load_dotenv
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from utils.connect import connect_to_app_db     
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi import HTTPException, Depends
@@ -20,9 +19,6 @@ load_dotenv()
 JWT_SECRET      = os.getenv("JWT_SECRET")
 JWT_ALGORITHM   = "HS256"
 JWT_EXPIRY_DAYS = 7
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 def hash_password(plain: str) -> str:
     return bcrypt.hashpw(plain.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
