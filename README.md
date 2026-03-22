@@ -8,11 +8,9 @@ A full-stack AI-powered database querying application.
 
 ## Live Deployment
 
-Hosted frontend URL:
+Hosted URL:
 
 - https://talk-to-db-frontend.vercel.app/login
-
-> Backend API must be deployed separately and configured via `NEXT_PUBLIC_API_URL`.
 
 ---
 
