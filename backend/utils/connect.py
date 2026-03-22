@@ -8,8 +8,8 @@ def connect_to_master_db():
         connection = psycopg2.connect(
             host=os.getenv("POSTGRES_HOST") or "localhost",
             port=os.getenv("POSTGRES_PORT"),
-            user=os.getenv("POSTGRES_MASTER_USER") or "postgres",
-            password=os.getenv("POSTGRES_MASTER_PASSWORD") or "admin",
+            user=os.getenv("POSTGRES_MASTER_USER") ,
+            password=os.getenv("POSTGRES_MASTER_PASSWORD"),
             dbname=os.getenv("POSTGRES_MASTER_DB") or "postgres",
         )
         print("Connection to database established successfully.")
@@ -24,8 +24,8 @@ def connect_to_app_db():
         connection = psycopg2.connect(
             host=os.getenv("POSTGRES_HOST") or "localhost",
             port=os.getenv("POSTGRES_PORT"),
-            user=os.getenv("POSTGRES_APP_USER") or "app_user",
-            password=os.getenv("POSTGRES_APP_PASSWORD") or "admin",
+            user=os.getenv("POSTGRES_APP_USER") ,
+            password=os.getenv("POSTGRES_APP_PASSWORD"),
             dbname=os.getenv("POSTGRES_APP_DB") or "application_db",
             cursor_factory=RealDictCursor
         )
