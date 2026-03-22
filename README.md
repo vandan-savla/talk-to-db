@@ -93,7 +93,7 @@ cd backend
 uvicorn api.main:app --reload
 ```
 
-5. Start schema worker (optional):
+5. Start schema worker:
 
 ```bash
 python -m schema_worker.schema_check_worker
@@ -125,6 +125,53 @@ npm run dev
 4. Open browser:
 
 - http://localhost:3000/login
+
+---
+
+## Qdrant Setup (Vector Store)
+
+This project uses Qdrant for vector embeddings and semantic retrieval, via `qdrant-client[fastembed]` and LangChain.
+
+### 1. Hosted Qdrant (recommended)
+
+- Use a managed Qdrant instance (e.g., Qdrant Cloud).
+- Copy your `QDRANT_URL` and `QDRANT_API_KEY` into backend `.env`.
+
+```env
+QDRANT_URL=https://<your-cluster>.us-east-1-1.aws.cloud.qdrant.io:6333
+QDRANT_API_KEY=<your-api-key>
+```
+
+### 2. Local Qdrant (via Docker)
+
+If you prefer local development with Docker:
+
+```bash
+docker run -p 6333:6333 -it qdrant/qdrant:latest
+```
+
+Then set `.env`:
+
+```env
+QDRANT_URL=http://localhost:6333
+QDRANT_API_KEY=
+```
+
+### 3. Validate Qdrant connection
+
+Run the backend and call the schema endpoint (or inspect logs):
+
+```bash
+curl -X GET "http://localhost:8000/v1/explorer/schema"
+```
+
+In app logs, connection success looks like mapping index creation or vector write operations from `vector_store/qdrant_store.py`.
+
+### 4. On Qdrant integration behavior
+
+- The app uses `langchain` embedding + query flow from `app/tools` and `app/nodes`.
+- `vector_store/qdrant_store.py` handles insert/search over Postgres-backed data and model-generated embeddings.
+- If Qdrant is unavailable, queries may fall back to SQL-only routes (check backend error logs).
 
 ---
 
