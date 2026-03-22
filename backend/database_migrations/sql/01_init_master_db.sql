@@ -1,21 +1,21 @@
 -- Create user
-CREATE USER postgres WITH PASSWORD 'admin';
+-- CREATE USER postgres WITH PASSWORD 'admin';
 
 -- Create database
-CREATE DATABASE postgres;
+CREATE DATABASE master_db;
 
 -- Give ownership
-ALTER DATABASE postgres OWNER TO postgres;
+ALTER DATABASE master_db OWNER TO primary_backend_data_user;
 
 -- Connect to DB
-\c postgres;
+\c master_db;
 
 -- Schema permissions
-GRANT ALL ON SCHEMA public TO postgres;
+GRANT ALL ON SCHEMA public TO primary_backend_data_user;
 
 -- Future tables
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
-GRANT ALL ON TABLES TO postgres;
+GRANT ALL ON TABLES TO primary_backend_data_user;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-GRANT ALL ON SEQUENCES TO postgres;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public 
+GRANT ALL ON SEQUENCES TO primary_backend_data_user;

@@ -2,9 +2,7 @@ import os
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
-
 from langchain_qdrant import QdrantVectorStore
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 
 load_dotenv()

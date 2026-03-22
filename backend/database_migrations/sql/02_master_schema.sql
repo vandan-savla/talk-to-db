@@ -1,20 +1,20 @@
-\c postgres;
+\c master_db;
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
     full_name VARCHAR(100),
     email VARCHAR(100) UNIQUE,
     created_at TIMESTAMP
 );
 
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
     product_id SERIAL PRIMARY KEY,
     product_name VARCHAR(100),
     price NUMERIC(10,2),
     stock_quantity INTEGER
 );
 
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
     order_id SERIAL PRIMARY KEY,
     user_id INTEGER,
     order_date DATE,
@@ -25,7 +25,7 @@ CREATE TABLE orders (
         ON DELETE CASCADE
 );
 
-CREATE TABLE order_items (
+CREATE TABLE IF NOT EXISTS order_items (
     order_item_id SERIAL PRIMARY KEY,
     order_id INTEGER,
     product_id INTEGER,
