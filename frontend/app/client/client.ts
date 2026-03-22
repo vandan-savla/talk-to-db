@@ -15,11 +15,11 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-// On 401 → clear token and redirect to login
+// On 401 → clear token and redirect to login (except on login page)
 api.interceptors.response.use(
     (res) => res,
     (error) => {
-        if (error.response?.status === 401 && typeof window !== "undefined") {
+        if (error.response?.status === 401 && typeof window !== "undefined" && window.location.pathname !== "/login") {
             Cookies.remove("token", { path: "/" });
             localStorage.removeItem("token");
             localStorage.removeItem("user");
@@ -29,4 +29,4 @@ api.interceptors.response.use(
     }
 );
 
-export default api;
+export default api;

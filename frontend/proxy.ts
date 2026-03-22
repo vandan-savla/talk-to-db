@@ -21,9 +21,9 @@ export function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    if (isAuthRoute && token) {
-        return NextResponse.redirect(new URL("/chat", request.url));
-    }
+    // if (isAuthRoute && token) {
+    //     return NextResponse.redirect(new URL("/chat", request.url));
+    // }
 
     return NextResponse.next();
 }

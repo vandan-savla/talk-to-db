@@ -20,7 +20,7 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
 
-    async function handleSubmit(e: React.FormEvent) {
+    async function handleSubmit(e: React.SubmitEvent) {
         e.preventDefault();
         setLoading(true);
         try {
@@ -28,7 +28,7 @@ export default function LoginPage() {
             setAuth(res.access_token, res.user);
             router.replace("/chat");
         } catch (err: any) {
-            toast.error("Login Failed", {
+            toast("Login Failed", {
                 description: err.response?.data?.detail || "An error occurred during login.",
             });
         } finally {
