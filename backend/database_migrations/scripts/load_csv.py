@@ -5,8 +5,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-# DB_URL = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('POSTGRES_HOST')}:{os.getenv('POSTGRES_PORT')}/master_db"
-DB_URL = os.getenv("POSTGRES_MASTER_DB_URL")
+DB_URL = f"postgresql://{os.getenv('POSTGRES_MASTER_USER')}:{os.getenv('POSTGRES_MASTER_PASSWORD')}@{os.getenv('POSTGRES_HOST')}:{os.getenv('POSTGRES_PORT')}/master_db"
+# DB_URL = os.getenv("POSTGRES_MASTER_DB_URL")
 
 DATA_DIR = "./database_migrations/data"
 

@@ -57,7 +57,6 @@ def get_conversations(user_id: str) -> list[dict]:
     finally:
         conn.close()
 
-
 # ── Get a single conversation by id ──────────────────────────
 def get_conversation_by_id(conversation_id: str) -> Optional[dict]:
     conn = connect_to_app_db()
@@ -160,4 +159,4 @@ def delete_conversation(conversation_id: str):
         print(f"[delete_conversation] Error: {e}")
         raise
     finally:
-        conn.close()
+        conn.close()

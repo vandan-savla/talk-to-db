@@ -6,8 +6,8 @@ load_dotenv()
 def connect_to_master_db():
     try:
         connection = psycopg2.connect(
-            host=os.getenv("POSTGRES_MASTER_HOST") or "localhost",
-            port=os.getenv("POSTGRES_MASTER_PORT"),
+            host=os.getenv("POSTGRES_HOST") or "localhost",
+            port=os.getenv("POSTGRES_PORT"),
             user=os.getenv("POSTGRES_MASTER_USER") or "postgres",
             password=os.getenv("POSTGRES_MASTER_PASSWORD") or "admin",
             dbname=os.getenv("POSTGRES_MASTER_DB") or "postgres",
@@ -22,8 +22,8 @@ def connect_to_master_db():
 def connect_to_app_db():
     try:
         connection = psycopg2.connect(
-            host=os.getenv("POSTGRES_APP_HOST") or "localhost",
-            port=os.getenv("POSTGRES_APP_PORT"),
+            host=os.getenv("POSTGRES_HOST") or "localhost",
+            port=os.getenv("POSTGRES_PORT"),
             user=os.getenv("POSTGRES_APP_USER") or "app_user",
             password=os.getenv("POSTGRES_APP_PASSWORD") or "admin",
             dbname=os.getenv("POSTGRES_APP_DB") or "application_db",

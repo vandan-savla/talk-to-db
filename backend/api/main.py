@@ -11,8 +11,8 @@ from slowapi.errors import RateLimitExceeded
 
 load_dotenv()
 
-# origins = [ os.getenv("FRONTEND_URL", "http://localhost:3000"), os.getenv("FRONTEND_PROD_URL") ]  # allow env var override, default to 
-
+origins = [ os.getenv("FRONTEND_URL", "http://localhost:3000"), os.getenv("FRONTEND_PROD_URL") ] 
+print(origins)
 limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(title="Talk to DB", debug=True)
@@ -20,9 +20,8 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
+    allow_origins=origins,  
     allow_credentials=True,
-    # allow_methods=["GET","POST", "PATCH"],
     allow_methods=["*"],
     allow_headers=["*"]
 )
@@ -32,3 +31,6 @@ app.include_router(query_routes)
 app.include_router(auth_routes)
 app.include_router(conversation_routes)
 
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
