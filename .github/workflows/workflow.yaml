@@ -37,4 +37,4 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: vdsavla21/talk-to-db:latest
+          tags: vdsavla21/talk-to-db-fast-api:latest
