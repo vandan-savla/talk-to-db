@@ -1,6 +1,12 @@
 name: Docker Image CI
 
 on:
+  workflow_dispatch:
+    inputs:
+      trigger:
+        description: "Trigger the workflow manually"
+        required: true
+        default: "true"
   push:
     branches: ["main"]
     paths-ignore:
