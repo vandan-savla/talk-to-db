@@ -1,12 +1,15 @@
+import os
+import logging
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from langchain_groq import ChatGroq
 from langgraph.graph import MessagesState
-import os
-from app.pydantic_models.node_schemas import RewriteQueryOutput, TableSchemasOutput, WriteSqlOutput, ValidateQueryOutput
+from app.pydantic_models.node_schemas import RewriteQueryOutput, WriteSqlOutput, TableSchemasOutput, ValidateQueryOutput
+
+logger = logging.getLogger(__name__)
 
 def write_sql_query(state: MessagesState) -> MessagesState:
-    schemas_text, normalized_query, feedback_text = "", "", ""
-
+    # 1. Get the latest normalized query
+    normalized_query = ""
     for msg in reversed(state["messages"]):
         if msg.name == "get_tables_schemas":
             try:
@@ -18,9 +21,12 @@ def write_sql_query(state: MessagesState) -> MessagesState:
         if msg.name == "rewrite_user_query":
             try:
                 normalized_query = RewriteQueryOutput.model_validate_json(msg.content).normalized_query
-            except: pass
+            except:
+                pass
             break
-
+            
+    # 2. Get the table schemas
+    schemas_text = ""
     for msg in reversed(state["messages"]):
         if msg.name == "validate_query":
             try:
@@ -30,15 +36,21 @@ def write_sql_query(state: MessagesState) -> MessagesState:
             except: pass
             break
 
-    system_prompt = f"""You are an expert SQL developer. Write an optimized SQL query.
+    logger.info(f"Writing SQL for normalized query: {normalized_query[:50]}...")
 
-Table schemas:
-{schemas_text}
-
-{f"Feedback: {feedback_text}" if feedback_text else ""}
-
-Respond ONLY with valid JSON: {{"candidate_sql": "SELECT ..."}}
-"""
+    system_prompt = f"""You are a PostgreSQL expert. Write a syntactically correct SQL query based on the following:
+    Normalized User Request: {normalized_query}
+    
+    Table Schemas:
+    {schemas_text}
+    
+    RULES:
+    1. Only use the tables and columns provided in the schemas.
+    2. The query must be a valid SELECT statement.
+    3. Return ONLY the JSON requested.
+    
+    {{"candidate_sql": "SELECT ..."}}
+    """
 
     model = ChatGroq(
         model="openai/gpt-oss-120b",
@@ -50,5 +62,5 @@ Respond ONLY with valid JSON: {{"candidate_sql": "SELECT ..."}}
         HumanMessage(content=f"Write the SQL query as JSON for: {normalized_query}")
     ])
 
-    print(f"Generated SQL: {response.candidate_sql}")
+    logger.info(f"Generated SQL query: {response.candidate_sql[:100]}...")
     return {"messages": [AIMessage(content=response.model_dump_json(), name="write_sql_query")]}

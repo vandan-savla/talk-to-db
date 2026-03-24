@@ -1,8 +1,11 @@
+import os
+import logging
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from langchain_groq import ChatGroq
 from langgraph.graph import MessagesState
-import os
 from app.pydantic_models.node_schemas import DeciderOutput
+
+logger = logging.getLogger(__name__)
 
 def decider_node(state: MessagesState) -> MessagesState:
     # Get latest user message
@@ -40,7 +43,7 @@ def decider_node(state: MessagesState) -> MessagesState:
         """
 
     model = ChatGroq(
-        model="openai/gpt-oss-120b",
+        model="openai/gpt-oss-20b",
         groq_api_key=os.getenv("GROQ_API_KEY")
     ).with_structured_output(DeciderOutput, method="json_mode")
 
@@ -48,6 +51,8 @@ def decider_node(state: MessagesState) -> MessagesState:
         SystemMessage(content=system_prompt),
         HumanMessage(content=f"Classify this message as JSON: {user_question}")
     ])
+
+    logger.info(f"Decider decision: {response.decision}")
 
     if not response.decision:
         return {

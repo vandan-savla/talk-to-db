@@ -1,8 +1,12 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os 
+import logging
 from dotenv import load_dotenv
+
 load_dotenv()
+logger = logging.getLogger(__name__)
+
 def connect_to_master_db():
     try:
         connection = psycopg2.connect(
@@ -12,12 +16,11 @@ def connect_to_master_db():
             password=os.getenv("POSTGRES_MASTER_PASSWORD"),
             dbname=os.getenv("POSTGRES_MASTER_DB") or "postgres",
         )
-        print("Connection to database established successfully.")
+        logger.info("Connection to master database established successfully.")
         return connection
     except Exception as e:
-        print(f"Error connecting to database: {e}")
+        logger.error(f"Error connecting to master database: {e}", exc_info=True)
         return None
-    
     
 def connect_to_app_db():
     try:
@@ -29,8 +32,8 @@ def connect_to_app_db():
             dbname=os.getenv("POSTGRES_APP_DB") or "application_db",
             cursor_factory=RealDictCursor
         )
-        print("Connection to app database established successfully.")
+        logger.info("Connection to app database established successfully.")
         return connection
     except Exception as e:
-        print(f"Error connecting to app database: {e}")
+        logger.error(f"Error connecting to app database: {e}", exc_info=True)
         return None

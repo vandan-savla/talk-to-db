@@ -1,8 +1,11 @@
+import os
+import logging
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from langchain_groq import ChatGroq
 from langgraph.graph import MessagesState
-import os
 from app.pydantic_models.node_schemas import RewriteQueryOutput, TableSchemasOutput, WriteSqlOutput, ValidateQueryOutput
+
+logger = logging.getLogger(__name__)
 
 def validate_query(state: MessagesState) -> MessagesState:
     schemas_text, candidate_sql, normalized_query = "", "", ""
@@ -28,6 +31,8 @@ def validate_query(state: MessagesState) -> MessagesState:
             except: pass
             break
 
+    logger.info(f"Validating SQL for query: {normalized_query[:50]}...")
+
     system_prompt = f"""You are an expert SQL validator. Check if the SQL correctly answers the question given the schema.
         Verify syntax, table names, column names, and logic.
         
@@ -41,7 +46,7 @@ def validate_query(state: MessagesState) -> MessagesState:
         """
 
     model = ChatGroq(
-        model="openai/gpt-oss-120b",
+        model="openai/gpt-oss-20b",
         groq_api_key=os.getenv("GROQ_API_KEY")
     ).with_structured_output(ValidateQueryOutput, method="json_mode")
 
@@ -49,5 +54,7 @@ def validate_query(state: MessagesState) -> MessagesState:
         SystemMessage(content=system_prompt),
         HumanMessage(content=f"Validate this SQL as JSON for question: {normalized_query}")
     ])
+
+    logger.info(f"Validation result: {response.is_valid}")
 
     return {"messages": [AIMessage(content=response.model_dump_json(), name="validate_query")]}

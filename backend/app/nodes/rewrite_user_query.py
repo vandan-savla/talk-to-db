@@ -1,11 +1,21 @@
+import os
+import json
+import logging
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from langchain_groq import ChatGroq
 from langgraph.graph import MessagesState
-import os, json
-from app.pydantic_models.node_schemas import RewriteQueryOutput, ValidateQueryOutput, FormatResponseOutput
+from app.pydantic_models.node_schemas import RewriteQueryOutput, ValidateQueryOutput
+
+logger = logging.getLogger(__name__)
 
 def rewrite_user_query(state: MessagesState) -> MessagesState:
     # 1. Get the latest user question
+    
+    logger.info(f"State messages count: {len(state['messages'])}")
+    
+    logger.info(f"Summary : {state.get('summary', 'No summary in state')}")
+    
+    logger.info(f"State messages: {(state['messages'])}")
     user_question = ""
     for msg in reversed(state["messages"]):
         if msg.name == "user_query":
@@ -67,5 +77,5 @@ def rewrite_user_query(state: MessagesState) -> MessagesState:
         HumanMessage(content=f"Normalize this into JSON: {user_question}")
     ])
 
-    print(f"Rewritten query: {response.normalized_query}")
+    logger.info(f"Normalized query: {response.normalized_query}")
     return {"messages": [AIMessage(content=response.model_dump_json(), name="rewrite_user_query")]}

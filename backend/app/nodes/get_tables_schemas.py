@@ -1,9 +1,11 @@
+import os
+import logging
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from langchain_groq import ChatGroq
 from langgraph.graph import MessagesState
-import os
+from app.pydantic_models.node_schemas import RewriteQueryOutput , TableSchemasOutput
 from app.tools.table_schema_retrieval import get_relevant_tables
-from app.pydantic_models.node_schemas import RewriteQueryOutput, TableSchemasOutput
+logger = logging.getLogger(__name__)
 
 def get_tables_schemas(state: MessagesState) -> MessagesState:
     normalized_query = ""
@@ -15,18 +17,18 @@ def get_tables_schemas(state: MessagesState) -> MessagesState:
             except:
                 pass
             break
-
+    
     docs = get_relevant_tables.invoke({"query": normalized_query})
     raw_schemas = "\n\n".join(docs) if isinstance(docs, list) else str(docs)
 
     system_prompt = f"""You are a database assistant. Extract relevant table names and schema info from the docs below.
-Only include tables relevant to the question.
+    Only include tables relevant to the question.
 
-Raw schema docs:
-{raw_schemas}
+    Raw schema docs:
+    {raw_schemas}
 
-Respond ONLY with valid JSON:
-{{"candidate_tables": ["table1"], "schemas_text": "..."}}
+    Respond ONLY with valid JSON:
+    {{"candidate_tables": ["table1"], "schemas_text": "..."}}
 """
 
     model = ChatGroq(
