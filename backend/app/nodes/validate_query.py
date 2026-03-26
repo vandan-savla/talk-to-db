@@ -35,6 +35,7 @@ def validate_query(state: MessagesState) -> MessagesState:
 
     system_prompt = f"""You are an expert SQL validator. Check if the SQL correctly answers the question given the schema.
         Verify syntax, table names, column names, and logic.
+        Also understand shortcuts, context and implicit info in the question to validate if the SQL is likely to return the correct answer, not just if it's syntactically correct.
         
         Table schemas:
         {schemas_text}

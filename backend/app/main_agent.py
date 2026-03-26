@@ -25,32 +25,36 @@ load_dotenv()
 
 conn = sqlite3.connect("agent_memory.db", check_same_thread=False)
 checkpointer = SqliteSaver(conn)
+from app.state import AgentState
 
-class AgentState(MessagesState):
-    summary: str
+# ── State ─────────────────────────────────────────────────────────────────────
+# class AgentState(MessagesState):
+#     summary: str = ""
 
-# ── Turn detection helper ─────────────────────────────────────────────────────
+# Turn window: summarize every N completed turns
+TURNS_PER_WINDOW = 2
+
+# ── Turn detection helpers ────────────────────────────────────────────────────
 def get_completed_turns(messages: list[BaseMessage]) -> list[list[BaseMessage]]:
-    """Groups messages into turns: (user_query -> ... -> final_response)."""
+    """Groups messages into turns: user_query → ... → format_response/final_response."""
     turns = []
-    current_turn = []
-    
+    current_turn: list[BaseMessage] = []
+
     for msg in messages:
-        # A new turn starts with HumanMessage(name="user_query")
-        if isinstance(msg, HumanMessage) and getattr(msg, 'name', None) == "user_query":
+        if isinstance(msg, HumanMessage) and getattr(msg, "name", None) == "user_query":
             if current_turn:
                 turns.append(current_turn)
             current_turn = [msg]
         else:
             current_turn.append(msg)
-            # A turn ends with a final AIMessage
-            if isinstance(msg, AIMessage) and getattr(msg, 'name', None) in ["format_response", "final_response"]:
+            if isinstance(msg, AIMessage) and getattr(msg, "name", None) in ("format_response", "final_response"):
                 turns.append(current_turn)
                 current_turn = []
-                
+
     if current_turn:
         turns.append(current_turn)
-    logger.info(f"Turns: {turns}")
+
+    logger.info(f"[turn_detection] total turns in state: {len(turns)}")
     return turns
 
 def count_completed_turns(messages: list[BaseMessage]) -> int:
@@ -66,99 +70,112 @@ def count_completed_turns(messages: list[BaseMessage]) -> int:
 def summarize_conversation(state: AgentState):
     existing_summary = state.get("summary", "")
     all_messages = state["messages"]
-    
+
     turns = get_completed_turns(all_messages)
-    
-    # We only summarize if we have 6 or more turns. 
-    # Usually we summarize the first 6.
-    if len(turns) < 6:
+
+    if len(turns) < TURNS_PER_WINDOW:
+        logger.info(f"[summarize] only {len(turns)} turns — skipping (need {TURNS_PER_WINDOW})")
         return {}
-    
-    summarizable_turns = turns[:6]
+
+    # Take the oldest TURNS_PER_WINDOW completed turns
+    summarizable_turns = turns[:TURNS_PER_WINDOW]
     messages_to_delete = [msg for turn in summarizable_turns for msg in turn]
-    
-    # Build a rich readable context for the LLM from ALL messages in these turns
+
+    # Build rich context from ALL messages in the turns
     readable_context = []
     for i, turn in enumerate(summarizable_turns):
-        turn_text = [f"--- Turn {i+1} ---"]
+        lines = [f"--- Turn {i + 1} ---"]
         for msg in turn:
             role = "User" if isinstance(msg, HumanMessage) else "Assistant"
-            node_name = getattr(msg, 'name', 'unknown')
-            
-            # Extract content based on node type for richer summary
+            node_name = getattr(msg, "name", "unknown")
             content = msg.content
+
             if node_name == "format_response":
                 try:
-                    data = json.loads(content)
-                    content = f"Final Answer: {data.get('answer', '')}"
-                except: pass
+                    content = f"Final Answer: {json.loads(content).get('answer', '')}"
+                except Exception:
+                    pass
             elif node_name == "write_sql_query":
                 try:
-                    data = json.loads(content)
-                    content = f"Generated SQL: {data.get('candidate_sql', '')}"
-                except: pass
+                    content = f"Generated SQL: {json.loads(content).get('candidate_sql', '')}"
+                except Exception:
+                    pass
             elif node_name == "rewrite_user_query":
                 try:
-                    data = json.loads(content)
-                    content = f"Normalized Query: {data.get('normalized_query', '')}"
-                except: pass
-            
-            turn_text.append(f"[{role} - {node_name}] {content}")
-        readable_context.append("\n".join(turn_text))
+                    content = f"Normalized Query: {json.loads(content).get('normalized_query', '')}"
+                except Exception:
+                    pass
 
-    logger.info(f"Summarizing the first 6 turns out of {len(turns)} available.")
+            lines.append(f"[{role} - {node_name}] {content}")
+        readable_context.append("\n".join(lines))
+
+    logger.info(f"[summarize] summarizing {len(summarizable_turns)} turns. existing_summary length={len(existing_summary)}")
 
     prompt = (
-        f"You are a memory manager for a database assistant. Update the existing summary with these 6 new turns. "
-        f"The existing summary is:\n{existing_summary}\n\n"
-        f"NEW TURNS TO SUMMARIZE:\n"
+        f"You are a memory manager for a SQL database assistant. "
+        f"Update the existing summary below by incorporating the new turns. "
+        f"Keep it concise but capture tables, questions, and key results.\n\n"
+        f"EXISTING SUMMARY:\n{existing_summary}\n\nNEW TURNS:\n"
         if existing_summary else
-        "Summarize these first 6 conversation turns between a user and a database assistant. Capture key topics, tables queried, and answers.\n\n"
+        "Summarize the following conversation turns between a user and a SQL database assistant. "
+        "Capture tables queried, key questions, and answers.\n\n"
     ) + "\n\n".join(readable_context)
 
+    # Plain LLM call — response.content is just a string (the summary text)
     llm = ChatGroq(model="openai/gpt-oss-120b", groq_api_key=os.getenv("GROQ_API_KEY"))
-    response = llm.invoke([
-        SystemMessage(content="Create/Update a concise but technically accurate summary of user-assistant interactions regarding a SQL database."),
+    response  = llm.invoke([
+        SystemMessage(content="Create/update a concise technical summary of user-assistant SQL database interactions."),
         HumanMessage(content=prompt)
     ])
 
-    delete = [RemoveMessage(id=m.id) for m in messages_to_delete]
-    logger.info("Summarization complete. Pruning messages from the first 6 turns.")
+    new_summary = response.content
+    
+    
+    logger.info(f"[summarize] new summary generated ({len(new_summary)} chars). pruning {len(messages_to_delete)} messages.")
 
-    return {"summary": response.content, "messages": delete}
+    # Correct return: update summary field + delete the old messages
+    delete_ops = [RemoveMessage(id=m.id) for m in messages_to_delete]
+    # logger.info(f"[summarize] {state['summary'] or ''}  ")
+    logger.info(f"[summarize] {state['messages'][-1]}  ")
+
+    return {"summary": response.content, "messages": delete_ops}
 
 # ── Routing functions ─────────────────────────────────────────────────────────
 def route_after_decider(state: AgentState) -> str:
     for msg in reversed(state["messages"]):
-        if msg.name == "final_response":
+        if getattr(msg, "name", None) == "final_response":
             return "after_final"
-        if msg.name == "decider_node":
+        if getattr(msg, "name", None) == "decider_node":
             return "rewrite_user_query"
         break
     return "rewrite_user_query"
 
+
 def route_after_final(state: AgentState) -> str:
-    """Check if we have at least 7 turns total; if so, summarize the first 6."""
-    if count_completed_turns(state["messages"]) >= 7:
+    """After a non-DB response, check if we should summarize."""
+    if count_completed_turns(state["messages"]) > TURNS_PER_WINDOW:
         return "summarize_conversation"
     return END
 
+
 def route_validation(state: AgentState) -> str:
     for msg in reversed(state["messages"]):
-        if msg.name == "validate_query":
+        if getattr(msg, "name", None) == "validate_query":
             try:
                 data = ValidateQueryOutput.model_validate_json(msg.content)
                 return "execute_sql_query" if data.is_valid else "rewrite_user_query"
-            except:
+            except Exception:
                 pass
             break
     return "rewrite_user_query"
 
+
 def route_after_format(state: AgentState) -> str:
-    """Check if we have at least 7 turns total; if so, summarize the first 6."""
-    if count_completed_turns(state["messages"]) >= 7:
+    """After a full DB pipeline response, check if we should summarize."""
+    if count_completed_turns(state["messages"]) > TURNS_PER_WINDOW:
         return "summarize_conversation"
     return END
+
 
 # ── Graph ─────────────────────────────────────────────────────────────────────
 def build_graph():
@@ -173,10 +190,8 @@ def build_graph():
     workflow.add_node("format_response", format_response)
     workflow.add_node("summarize_conversation", summarize_conversation)
 
-    # Entry point
     workflow.add_edge(START, "decider_node")
 
-    # After decider — branch to pipeline or skip
     workflow.add_conditional_edges(
         "decider_node",
         route_after_decider,
@@ -186,7 +201,6 @@ def build_graph():
         }
     )
 
-    # Main pipeline
     workflow.add_edge("rewrite_user_query", "get_tables_schemas")
     workflow.add_edge("get_tables_schemas", "write_sql_query")
     workflow.add_edge("write_sql_query", "validate_query")
@@ -195,7 +209,7 @@ def build_graph():
         route_validation,
         {
             "execute_sql_query": "execute_sql_query",
-            "rewrite_user_query": "rewrite_user_query"
+            "rewrite_user_query": "rewrite_user_query",
         }
     )
     workflow.add_edge("execute_sql_query", "format_response")
@@ -204,13 +218,14 @@ def build_graph():
         route_after_format,
         {
             "summarize_conversation": "summarize_conversation",
-            END: END
+            END: END,
         }
     )
 
     workflow.add_edge("summarize_conversation", END)
 
     return workflow.compile(checkpointer=checkpointer)
+
 
 main_agent = build_graph()
 

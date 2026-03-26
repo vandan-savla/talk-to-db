@@ -18,7 +18,7 @@ def execute_sql_query_node(state: MessagesState) -> MessagesState:
             break
     
     if candidate_sql:
-        logger.info(f"Executing SQL query: {candidate_sql[:100]}...")
+        logger.info(f"Executing SQL query: {candidate_sql}...")
     else:
         logger.warning("No SQL query found in state to execute.")
     

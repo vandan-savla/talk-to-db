@@ -27,6 +27,7 @@ def write_sql_query(state: MessagesState) -> MessagesState:
             
     # 2. Get the table schemas
     schemas_text = ""
+    feedback_text= ""
     for msg in reversed(state["messages"]):
         if msg.name == "validate_query":
             try:
@@ -36,20 +37,20 @@ def write_sql_query(state: MessagesState) -> MessagesState:
             except: pass
             break
 
-    logger.info(f"Writing SQL for normalized query: {normalized_query[:50]}...")
+    system_prompt = f"""
+    You are an expert SQL developer. Write an optimized SQL query with correct syntax and logic.
+    Consider proper column names, table names, and SQL best practices to ensure the query runs successfully and efficiently.
+    The SQL should be designed to answer the user's question as accurately as possible based on the provided schemas.
 
-    system_prompt = f"""You are a PostgreSQL expert. Write a syntactically correct SQL query based on the following:
-    Normalized User Request: {normalized_query}
-    
-    Table Schemas:
+    Table schemas:
     {schemas_text}
+
+    If any feedback is available from previous validation attempts, use it to improve the SQL: {feedback_text}
     
-    RULES:
-    1. Only use the tables and columns provided in the schemas.
-    2. The query must be a valid SELECT statement.
-    3. Return ONLY the JSON requested.
+    If multiple queries are needed to get the final answer, write them all in the correct order. Make sure each query is correct on its own and can be executed without errors.
     
-    {{"candidate_sql": "SELECT ..."}}
+    
+    Respond ONLY with valid JSON: {{"candidate_sql": ["SELECT ..."]}}
     """
 
     model = ChatGroq(
@@ -62,5 +63,5 @@ def write_sql_query(state: MessagesState) -> MessagesState:
         HumanMessage(content=f"Write the SQL query as JSON for: {normalized_query}")
     ])
 
-    logger.info(f"Generated SQL query: {response.candidate_sql[:100]}...")
+    logger.info(f"Generated SQL query: {response.candidate_sql}...")
     return {"messages": [AIMessage(content=response.model_dump_json(), name="write_sql_query")]}
