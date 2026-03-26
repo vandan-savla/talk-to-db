@@ -58,7 +58,7 @@ async def query_db(request: Request, req: QueryRequest, user: dict = Depends(get
             )
         except json.JSONDecodeError:
             logger.warning("Failed to parse agent response as JSON. Returning as plain text.")
-            return QueryResponse(answer=last.content, sql_query="")
+            return QueryResponse(answer="I am unable to process that request.", sql_query="")
 
     except HTTPException:
         raise
