@@ -12,7 +12,9 @@ logger = logging.getLogger(__name__)
 
 # def rewrite_user_query(state: MessagesState) -> MessagesState:
 def rewrite_user_query(state: AgentState) -> AgentState:
-
+    feedback_text = ""
+    summary = state.get("summary", "")
+    context = ""
     # 1. Get the latest user question
   
     logger.info(f"State messages: {(state['messages'][-1].content)}")
@@ -23,8 +25,6 @@ def rewrite_user_query(state: AgentState) -> AgentState:
             break
 
     # 2. Get validation feedback if this is a retry
-    feedback_text = ""
-    summary = state.get("summary", "")
 
     for msg in reversed(state["messages"]):
         if msg.name == "validate_query":
