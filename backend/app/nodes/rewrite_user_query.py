@@ -39,6 +39,18 @@ def rewrite_user_query(state: AgentState) -> AgentState:
     # 3. Context = summary (long term) OR last 3 exchanges (short term)
     if summary:
         context = f"Conversation summary:\n{summary}"
+    else:
+        lines = []
+        for msg in state["messages"]:
+            if msg.name == "user_query":
+                lines.append(f"User: {msg.content}")
+            elif msg.name == "format_response":
+                try:
+                    data = json.loads(msg.content)
+                    lines.append(f"Assistant: {data.get('answer', '')[:200]}")
+                except:
+                    pass
+        context = "Recent conversation:\n" + "\n".join(lines[-6:]) if lines else ""
    
 
     system_prompt = f"""You are an expert SQL assistant. Your task is to normalize and refine the user's question to be more accurate and efficient for finding relevant tables in the database.
