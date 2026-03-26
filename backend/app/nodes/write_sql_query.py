@@ -47,10 +47,7 @@ def write_sql_query(state: MessagesState) -> MessagesState:
 
     If any feedback is available from previous validation attempts, use it to improve the SQL: {feedback_text}
     
-    If multiple queries are needed to get the final answer, write them all in the correct order. Make sure each query is correct on its own and can be executed without errors.
-    
-    
-    Respond ONLY with valid JSON: {{"candidate_sql": ["SELECT ..."]}}
+    Respond ONLY with valid JSON: {{"candidate_sql": "SELECT ..."}}
     """
 
     model = ChatGroq(
