@@ -1,11 +1,23 @@
+import os
+import json
+import logging
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from langchain_groq import ChatGroq
-from langgraph.graph import MessagesState
-import os, json
-from app.pydantic_models.node_schemas import RewriteQueryOutput, ValidateQueryOutput, FormatResponseOutput
+from app.state import AgentState
+ 
+from app.pydantic_models.node_schemas import RewriteQueryOutput, ValidateQueryOutput
 
-def rewrite_user_query(state: MessagesState) -> MessagesState:
+logger = logging.getLogger(__name__)
+
+
+# def rewrite_user_query(state: MessagesState) -> MessagesState:
+def rewrite_user_query(state: AgentState) -> AgentState:
+    feedback_text = ""
+    summary = state.get("summary", "")
+    context = ""
     # 1. Get the latest user question
+  
+    logger.info(f"State messages: {(state['messages'][-1].content)}")
     user_question = ""
     for msg in reversed(state["messages"]):
         if msg.name == "user_query":
@@ -13,7 +25,7 @@ def rewrite_user_query(state: MessagesState) -> MessagesState:
             break
 
     # 2. Get validation feedback if this is a retry
-    feedback_text = ""
+
     for msg in reversed(state["messages"]):
         if msg.name == "validate_query":
             try:
@@ -25,22 +37,9 @@ def rewrite_user_query(state: MessagesState) -> MessagesState:
             break
 
     # 3. Context = summary (long term) OR last 3 exchanges (short term)
-    summary = state.get("summary", "")
     if summary:
         context = f"Conversation summary:\n{summary}"
-    else:
-        # Build from raw messages — no LLM call, just string formatting
-        lines = []
-        for msg in state["messages"]:
-            if msg.name == "user_query":
-                lines.append(f"User: {msg.content}")
-            elif msg.name == "format_response":
-                try:
-                    data = json.loads(msg.content)
-                    lines.append(f"Assistant: {data.get('answer', '')[:200]}")
-                except:
-                    pass
-        context = "Recent conversation:\n" + "\n".join(lines[-6:]) if lines else ""
+   
 
     system_prompt = f"""You are an expert SQL assistant. Your task is to normalize and refine the user's question to be more accurate and efficient for finding relevant tables in the database.
     The refined query should be concise and focus on the key elements of the user's request, removing any unnecessary words or ambiguity.
@@ -67,5 +66,5 @@ def rewrite_user_query(state: MessagesState) -> MessagesState:
         HumanMessage(content=f"Normalize this into JSON: {user_question}")
     ])
 
-    print(f"Rewritten query: {response.normalized_query}")
+    logger.info(f"Normalized query: {response.normalized_query}")
     return {"messages": [AIMessage(content=response.model_dump_json(), name="rewrite_user_query")]}
